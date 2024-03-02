@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 
+# Cloudreve Desktop 作者：于小丘 / 暗之旅者
+
 #导入必要库
 import ttkbootstrap as ttk
 from ttkbootstrap import dialogs
+from ttkbootstrap.tableview import Tableview
+from ttkbootstrap.constants import *
 from PIL import Image, ImageTk
 import os,sys
 import requests
@@ -40,6 +44,38 @@ def FogetPassword():
     Foget_URL = URL + "/foget"
     webbrowser.open(Foget_URL)
 
+def SuccessLogin(response):
+    cookies_dict = requests.utils.dict_from_cookiejar(response.cookies) #把cookies转化成字典
+    cookies_str = json.dumps(cookies_dict)                              #调用json模块的dumps函数，把cookies从字典再转成字符串。
+    cookieWriter = open('cookies.txt', 'w')             #创建名为cookies.txt的文件，以写入模式写入内容
+    cookieWriter.write(cookies_str)
+    cookieWriter.close()
+    config.set('account', 'user_name', response.json()['data']['user_name'])
+    config.set('account', 'nickname', response.json()['data']['nickname'])
+    config.set('account', 'groupname', response.json()['data']['group']['name'])
+    config.set('account', 'AllowShare', str(response.json()['data']['group']['allowShare']))
+    config.set('account', 'AllowRemoteDownload', str(response.json()['data']['group']['allowRemoteDownload']))
+    config.set('account', 'AllowArchiveDownload', str(response.json()['data']['group']['allowArchiveDownload']))
+    config.set('account','AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
+    config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
+    GetDirList()
+    loginErrorCode.pack_forget()
+    pictureFrame.pack_forget()
+    label.pack_forget()
+    loginFrame.pack_forget()
+    MenuBar.pack(side=ttk.TOP,fill=ttk.X)
+    fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
+    screenWidth = app.winfo_screenwidth() # 获取显示区域的宽度
+    screenHeight = app.winfo_screenheight() # 获取显示区域的高度
+    width = 800 # 设定窗口宽度
+    height = 600 # 设定窗口高度
+    left = (screenWidth - width) / 2
+    top = (screenHeight - height) / 2
+    app.geometry("%dx%d+%d+%d" % (width, height, left, top))
+    RefrushStorage()
+
 def login():
     username = entry_username.get()
     config.set('account', 'username', username)
@@ -61,35 +97,19 @@ def login():
     if response.status_code == 200:
         status_code = response.json()['code']
         if status_code == 0:        #登录成功函数
-            cookies_dict = requests.utils.dict_from_cookiejar(response.cookies) #把cookies转化成字典
-            cookies_str = json.dumps(cookies_dict)                              #调用json模块的dumps函数，把cookies从字典再转成字符串。
-            cookieWriter = open('cookies.txt', 'w')             #创建名为cookies.txt的文件，以写入模式写入内容
-            cookieWriter.write(cookies_str)
-            cookieWriter.close()
-            config.set('account', 'user_name', response.json()['data']['user_name'])
-            config.set('account', 'nickname', response.json()['data']['nickname'])
-            config.set('account', 'groupname', response.json()['data']['group']['name'])
-            config.set('account', 'AllowShare', str(response.json()['data']['group']['allowShare']))
-            config.set('account', 'AllowRemoteDownload', str(response.json()['data']['group']['allowRemoteDownload']))
-            config.set('account', 'AllowArchiveDownload', str(response.json()['data']['group']['allowArchiveDownload']))
-            config.set('account','AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
-            config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
-            with open('config.ini', 'w') as configfile:
-                config.write(configfile)
-            GetDirList()
-            loginErrorCode.pack_forget()
-            pictureFrame.pack_forget()
-            label.pack_forget()
-            loginFrame.pack_forget()
-            MenuBar.pack(side=ttk.TOP,fill=ttk.X)
-            fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
-            screenWidth = app.winfo_screenwidth() # 获取显示区域的宽度
-            screenHeight = app.winfo_screenheight() # 获取显示区域的高度
-            width = 800 # 设定窗口宽度
-            height = 600 # 设定窗口高度
-            left = (screenWidth - width) / 2
-            top = (screenHeight - height) / 2
-            app.geometry("%dx%d+%d+%d" % (width, height, left, top))
+            SuccessLogin(response=response)
+        elif status_code == 203:    # 需要OTP验证码
+            frame_username.pack_forget()
+            frame_password.pack_forget()
+            frame_OTP.pack()
+            button_login.pack_forget()
+            button_register.pack_forget()
+            button_forget.pack_forget()
+            button_BackToLogin.pack(side=ttk.LEFT,ipadx=20,padx=5)
+            button_TwoStepLogin.pack(side=ttk.LEFT,ipadx=20,padx=5)
+            frame_button.pack_forget()
+            frame_button.pack(pady=5)
+            errorCode.set('需要OTP验证码')
         elif status_code == 40001:
             errorCode.set('账号密码不能为空')
         elif status_code == 40017:  #账号被封禁
@@ -102,6 +122,20 @@ def login():
             raise Exception("未知错误")
         if status_code != 0:
             loginErrorCode.pack()
+
+def BackToLogin():
+    entry_OTP.delete(0, ttk.END)
+    frame_button.pack_forget()
+    frame_OTP.pack_forget()
+    frame_username.pack(pady=5)
+    frame_password.pack(pady=5)
+    button_BackToLogin.pack_forget()
+    button_TwoStepLogin.pack_forget()
+    button_login.pack(side=ttk.LEFT,ipadx=20,padx=5)
+    button_register.pack(side=ttk.LEFT,ipadx=20,padx=5)
+    button_forget.pack(side=ttk.LEFT,padx=10)
+    frame_button.pack(pady=5)
+    loginErrorCode.pack_forget()
 
 def LogOut():
     ROOTPATH_URL = URL + '/api/v3/user/session'
@@ -147,8 +181,23 @@ def GetDirList(path="%2F"):
         date = obj.get('date', '').replace('T', ' ').split('.')[0]
         objects_list.append((name, str(size), date))
     for itm in objects_list:
-        fileList.insert("",'end',values=itm)
-    
+        #fileList.insert("",'end',values=itm)
+        fileList.insert_row('end', itm)
+    fileList.load_table_data()
+
+def RefrushStorage():
+    Require_URL = URL + '/api/v3/user/storage'
+    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    session = requests.Session()
+    session.cookies = cookies
+    response = session.get(Require_URL)             #返回内容 {"code":0,"data":{"used":896322996,"free":177418828,"total":1073741824},"msg":""}
+    Storage = json.loads(response.text)
+    used = convert_size(Storage['data']['used'])
+    total = convert_size(Storage['data']['total'])
+    accountText = config.get('account','nickname') + ' ' + used + '/' + total
+    accountInfo.config(text=accountText)
 
 def getcookies():
     cookieFiles = open('cookies.txt', 'r')
@@ -195,6 +244,7 @@ frame_username = ttk.Frame(iloginFrame)
 frame_username.pack(pady=5)
 frame_password = ttk.Frame(iloginFrame)
 frame_password.pack(pady=5)
+frame_OTP = ttk.Frame(iloginFrame)
 frame_button = ttk.Frame(iloginFrame)
 frame_button.pack(pady=5)
 
@@ -213,6 +263,11 @@ entry_password.insert(0,localpassword)
 entry_password.pack(side=ttk.LEFT,ipadx=30,padx=5)
 entry_password.bind('<Return>', on_enter_pressed)
 
+label_OTP = ttk.Label(frame_OTP, text="验证码:",font=('思源黑体',12))
+label_OTP.pack(side=ttk.LEFT)
+entry_OTP = ttk.Entry(frame_OTP)
+entry_OTP.pack(side=ttk.LEFT,ipadx=30,padx=5)
+
 button_login = ttk.Button(frame_button, text="登录", command=login)
 button_login.pack(side=ttk.LEFT,ipadx=20,padx=5)
 
@@ -223,6 +278,12 @@ button_register.pack(side=ttk.LEFT,ipadx=20,padx=5)
 #忘记密码相关
 button_forget = ttk.Button(frame_button, text="忘记密码",bootstyle="link",command=FogetPassword)
 button_forget.pack(side=ttk.LEFT,padx=10)
+
+#两步验证返回按钮
+button_BackToLogin = ttk.Button(frame_button, text="返回",bootstyle="outline",command=BackToLogin)
+
+#两步验证登录按钮
+button_TwoStepLogin = ttk.Button(frame_button, text="登录")
 
 #登录页布局结束,云盘主页布局开始
 
@@ -249,7 +310,13 @@ accountInfo.config(menu=UserMenu)
 fileListFrame = ttk.Frame(app)
 fileListFrame.pack(side=ttk.BOTTOM,fill=ttk.BOTH,expand=True)
 
-fileList = ttk.Treeview(fileListFrame,show="headings",columns=("名称","大小","修改日期"),displaycolumns="#all")
+coldata = [
+    {"text": "名称", "stretch": True},
+    "大小",
+    {"text": "修改日期", "stretch": True},
+]
+
+fileList = Tableview(fileListFrame,coldata=coldata)
 
 app.geometry("%dx%d+%d+%d" % (width, height, left, top))
 app.mainloop()

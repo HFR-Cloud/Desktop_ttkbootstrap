@@ -2,20 +2,10 @@
 <img alt="Logo" src="./Resources/Logo.png" height="250px">
 <br><br>
 <h1><center>Cloudreve Desktop</center></h1>
-一个基于Tkinter的可跨平台的Cloudreve客户端，并使用ttkbootstrap库进行美化。<br><br>
-<center>
-<a href="https://github.com/Yuerchu/Cloudreve_Desktop/releases/latest"><img src="https://img.shields.io/github/v/release/cloudreve/Cloudreve?color=blueviolet" alt="GitHub release"></a>
-<a href="https://github.com/Yuerchu/Cloudreve_Desktop/blob/main/LICENSE"><img src="https://img.shields.io/github/license/cloudreve/Cloudreve?color=blueviolet" alt="GitHub license"></a>
-</center>
-</p>
-
-
-## 项目介绍
-
-Cloudreve Desktop是一个基于Tkinter的可跨平台的Cloudreve客户端，使用Python编写。
+一个基于Tkinter的可跨平台的Cloudreve客户端，并使用ttkbootstrap库进行美化<br><br>
 
 ## 目前已经实现的功能
-- 登录
+- 登录 & 注销
 - 根目录浏览
 
 ## 兼容的Cloudreve版本
