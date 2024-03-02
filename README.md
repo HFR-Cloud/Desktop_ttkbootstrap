@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 <p align = "center">
-<img alt="ZFile" src="./Resources/Logo.png" height="250px">
+<img alt="Logo" src="./Resources/Logo.png" height="250px">
 <br><br>
 <h1><center>Cloudreve Desktop</center></h1>
 一个基于Tkinter的可跨平台的Cloudreve客户端，并使用ttkbootstrap库进行美化。<br><br>
@@ -51,8 +50,3 @@ Linux:
 
 ## 开源许可
 本程序使用GPLv3开源许可。
-=======
-# Cloudreve Desktop
-
-### 一个基于Tkinter的可跨平台的Cloudreve客户端
->>>>>>> dd62a14e6342ac01af783e66872003464cfcb337
