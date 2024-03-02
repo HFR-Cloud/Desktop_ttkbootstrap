@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
+
+#导入必要库
 import ttkbootstrap as ttk
+from ttkbootstrap import dialogs
 from PIL import Image, ImageTk
-import os
+import os,sys
 import requests
 import json
+import math
 import http.cookiejar
 import webbrowser
 from configparser import ConfigParser
 
+#登录页图片展示准备
 current_dir = os.path.dirname(os.path.abspath(__file__))
 resources_dir = os.path.join(current_dir, 'Resources')
 
@@ -15,11 +20,14 @@ cookie_jar = http.cookiejar.CookieJar()
 config = ConfigParser()
 config.read('config.ini')
 
-URL = config['account']['url']
+try:
+    URL = config['account']['url']
+except:
+    URL = "http://localhost:5212"
 
 try:
     localaccount = localpassword = ""
-    localaccount = config.get('account','account')
+    localaccount = config.get('account','username')
     localpassword = config.get('account','password')
 except:
     print('没有保存账号密码')
@@ -44,7 +52,12 @@ def login():
         'password': password
     }
     LOGIN_URL = URL + '/api/v3/user/session'
-    response = requests.post(LOGIN_URL, json=login_data)
+    try:
+        response = requests.post(LOGIN_URL, json=login_data)
+    except ConnectionError:
+        errorCode.set('无法连接到服务器')
+        loginErrorCode.pack()
+        pass
     if response.status_code == 200:
         status_code = response.json()['code']
         if status_code == 0:        #登录成功函数
@@ -90,6 +103,29 @@ def login():
         if status_code != 0:
             loginErrorCode.pack()
 
+def LogOut():
+    ROOTPATH_URL = URL + '/api/v3/user/session'
+    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    session = requests.Session()
+    session.cookies = cookies
+    response = session.delete(ROOTPATH_URL)
+    if response.status_code == 200:
+        status_code = response.json()['code']
+        if status_code == 0:        #退出登录成功
+            dialogs.Messagebox.ok(message='退出登录成功，重启应用生效')
+            sys.exit()
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return '0B'
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s%s" % (s, size_name[i])
+
 def GetDirList(path="%2F"):
     ROOTPATH_URL = URL + '/api/v3/directory' + path
     cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
@@ -105,6 +141,9 @@ def GetDirList(path="%2F"):
     for obj in objects:
         name = obj.get('name', '')
         size = obj.get('size', '')
+        size = convert_size(size)
+        if size == '0B':
+            size = ''
         date = obj.get('date', '').replace('T', ' ').split('.')[0]
         objects_list.append((name, str(size), date))
     for itm in objects_list:
@@ -129,8 +168,6 @@ top = (screenHeight - height) / 2
 app.resizable(0,0) #禁止窗口缩放
 
 #登录页布局
-
-image_path = os.path.join(resources_dir, '海picture.png')
 
 image_path = os.path.join(resources_dir, 'Logo.png')
 image = Image.open(image_path)
@@ -206,7 +243,7 @@ accountInfo.pack(side=ttk.RIGHT)
 UserMenu = ttk.Menu(accountInfo,relief='raised')
 UserMenu.add_command(label="个人主页")
 UserMenu.add_command(label="管理面板")
-UserMenu.add_command(label="退出登录")
+UserMenu.add_command(label="退出登录",command=LogOut)
 accountInfo.config(menu=UserMenu)
 
 fileListFrame = ttk.Frame(app)
