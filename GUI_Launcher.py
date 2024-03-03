@@ -17,12 +17,20 @@ import webbrowser
 from configparser import ConfigParser
 
 #登录页图片展示准备
-current_dir = os.path.dirname(os.path.abspath(__file__))
-resources_dir = os.path.join(current_dir, 'Resources')
+try:
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    resources_dir = os.path.join(current_dir, 'Resources')
+except:
+    print('文件缺失，拉取文件时没拉Resources文件夹？')
 
 cookie_jar = http.cookiejar.CookieJar()
 config = ConfigParser()
 config.read('config.ini')
+
+try:
+    AppName = config.get("Program", "AppName")
+except:
+    AppName = "Cloudreve"
 
 try:
     URL = config['account']['url']
@@ -56,8 +64,11 @@ def SuccessLogin(response):
     config.set('account', 'AllowShare', str(response.json()['data']['group']['allowShare']))
     config.set('account', 'AllowRemoteDownload', str(response.json()['data']['group']['allowRemoteDownload']))
     config.set('account', 'AllowArchiveDownload', str(response.json()['data']['group']['allowArchiveDownload']))
-    config.set('account','AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
-    config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
+    try:
+        config.set('account','AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
+        config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
+    except:
+        print('无法读取某些配置，可能是服务端版本过低')
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     GetDirList()
@@ -65,7 +76,8 @@ def SuccessLogin(response):
     Home_Frame.pack(fill=ttk.BOTH, expand=True)
     app.geometry('800x600')
     app.place_window_center()
-    app.title('/ - 海枫云存储')
+    TitleShow = '/ - ' + AppName
+    app.title(TitleShow)
     RefrushStorage()
 
 def loginOTP():
@@ -99,7 +111,11 @@ def loginOTP():
 
 def login():
     username = entry_username.get()
-    config.set('account', 'username', username)
+    try:
+        config.set('account', 'username', username)
+    except:
+        config.add_section('account')
+        config.set('account', 'username', username)
     password = entry_password.get()
     config.set('account', 'password', password)
     with open('config.ini', 'w') as configfile:
@@ -240,7 +256,7 @@ def Personal_Settings_Back():
 
 app = ttk.Window(themename='superhero')
 # 测试中的功能 - 无边框窗口 app.overrideredirect(True)
-app.title("海枫云存储")
+app.title(AppName)
 screenWidth = app.winfo_screenwidth() # 获取显示区域的宽度
 screenHeight = app.winfo_screenheight() # 获取显示区域的高度
 width = 625 # 设定窗口宽度
@@ -253,16 +269,18 @@ app.resizable(0,0) #禁止窗口缩放
 
 Login_Frame = ttk.Frame(app)
 Login_Frame.pack()
+try:
+    image_path = os.path.join(resources_dir, 'Logo.png')
+    image = Image.open(image_path)
+    photo = ImageTk.PhotoImage(image)
 
-image_path = os.path.join(resources_dir, 'Logo.png')
-image = Image.open(image_path)
-photo = ImageTk.PhotoImage(image)
+    pictureFrame = ttk.Frame(Login_Frame)
+    pictureFrame.pack(side=ttk.LEFT)
 
-pictureFrame = ttk.Frame(Login_Frame)
-pictureFrame.pack(side=ttk.LEFT)
-
-label = ttk.Label(pictureFrame, image=photo)
-label.pack(side=ttk.RIGHT)
+    label = ttk.Label(pictureFrame, image=photo)
+    label.pack(side=ttk.RIGHT)
+except:
+    pass
 
 loginFrame = ttk.Frame(Login_Frame)
 loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
@@ -270,7 +288,8 @@ loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
 iloginFrame = ttk.Frame(loginFrame)
 iloginFrame.pack(side=ttk.LEFT)
 
-label_APPNAME = ttk.Label(iloginFrame, text="登录 海枫云存储",font=('思源黑体',24))
+LoginAppName = '登录 ' + AppName
+label_APPNAME = ttk.Label(iloginFrame, text=LoginAppName,font=('思源黑体',24))
 label_APPNAME.pack(pady=10)
 
 errorCode = ttk.StringVar()

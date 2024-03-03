@@ -9,7 +9,8 @@
 - 根目录浏览
 
 ## 兼容的Cloudreve版本
-- 3.8.3 `推荐`
+- 3.x.x 
+- 建议使用3.8.3，对旧版目前仅做了登录的适配
 
 ## 三方开发指南
 需要在程序根目录新建文件`config.ini`，并写入以下内容：
@@ -20,17 +21,7 @@ url = http://localhost:5212
 ```
 
 ## 启动&构建方式
-确保操作系统内包含以下依赖项：
-```
-ttkbootstrap
-PIL
-os
-requests
-json
-http
-webbrowser
-configparser
-```
+将完整代码拉取到本地（Resources也要，否则无法启动）
 
 Windows:
 双击GUI_Launcher.py即可启动
@@ -39,4 +30,4 @@ Linux:
 使用`chomod +x GUI_Launcher.py`命令后再使用`./GUI_Launcher.py`即可启动。
 
 ## 开源许可
-本程序使用GPLv3开源许可。
+本程序暂时闭源，后续可能会考虑开源，请持续关注。
