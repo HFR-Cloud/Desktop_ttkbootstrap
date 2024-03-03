@@ -61,20 +61,41 @@ def SuccessLogin(response):
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     GetDirList()
-    loginErrorCode.pack_forget()
-    pictureFrame.pack_forget()
-    label.pack_forget()
-    loginFrame.pack_forget()
-    MenuBar.pack(side=ttk.TOP,fill=ttk.X)
-    fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
-    screenWidth = app.winfo_screenwidth() # 获取显示区域的宽度
-    screenHeight = app.winfo_screenheight() # 获取显示区域的高度
-    width = 800 # 设定窗口宽度
-    height = 600 # 设定窗口高度
-    left = (screenWidth - width) / 2
-    top = (screenHeight - height) / 2
-    app.geometry("%dx%d+%d+%d" % (width, height, left, top))
+    Login_Frame.pack_forget()
+    Home_Frame.pack(fill=ttk.BOTH, expand=True)
+    app.geometry('800x600')
+    app.place_window_center()
+    app.title('/ - 海枫云存储')
     RefrushStorage()
+
+def loginOTP():
+    username = entry_username.get()
+    config.set('account', 'username', username)
+    password = entry_password.get()
+    config.set('account', 'password', password)
+    captchaCode = entry_OTP.get()
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
+    login_data = {
+        'username': username,
+        'password': password,
+        'captchaCode': captchaCode
+    }
+    LOGIN_URL = URL + '/api/v3/user/session'
+    try:
+        response = requests.post(LOGIN_URL, json=login_data)
+    except ConnectionError:
+        errorCode.set('无法连接到服务器')
+        loginErrorCode.pack()
+        pass
+    if response.status_code == 200:
+        status_code = response.json()['code']
+        if status_code == 0:        #登录成功函数
+            SuccessLogin(response=response)
+        else:
+            raise Exception("未知错误")
+        if status_code != 0:
+            loginErrorCode.pack()
 
 def login():
     username = entry_username.get()
@@ -185,6 +206,9 @@ def GetDirList(path="%2F"):
         fileList.insert_row('end', itm)
     fileList.load_table_data()
 
+def AnalyzeListClick(event):
+    print('click')
+
 def RefrushStorage():
     Require_URL = URL + '/api/v3/user/storage'
     cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
@@ -206,7 +230,16 @@ def getcookies():
 def on_enter_pressed(event):
     login()
 
+def Personal_Settings():
+    Home_Frame.pack_forget()
+    Personal_Settings_Frame.pack(fill=BOTH, expand=YES)
+
+def Personal_Settings_Back():
+    Personal_Settings_Frame.pack_forget()
+    Home_Frame.pack(fill=BOTH, expand=YES)
+
 app = ttk.Window(themename='superhero')
+# 测试中的功能 - 无边框窗口 app.overrideredirect(True)
 app.title("海枫云存储")
 screenWidth = app.winfo_screenwidth() # 获取显示区域的宽度
 screenHeight = app.winfo_screenheight() # 获取显示区域的高度
@@ -218,18 +251,21 @@ app.resizable(0,0) #禁止窗口缩放
 
 #登录页布局
 
+Login_Frame = ttk.Frame(app)
+Login_Frame.pack()
+
 image_path = os.path.join(resources_dir, 'Logo.png')
 image = Image.open(image_path)
 photo = ImageTk.PhotoImage(image)
 
-pictureFrame = ttk.Frame(app)
+pictureFrame = ttk.Frame(Login_Frame)
 pictureFrame.pack(side=ttk.LEFT)
 
 label = ttk.Label(pictureFrame, image=photo)
 label.pack(side=ttk.RIGHT)
 
-loginFrame = ttk.Frame(app)
-loginFrame.pack(side=ttk.LEFT)
+loginFrame = ttk.Frame(Login_Frame)
+loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
 
 iloginFrame = ttk.Frame(loginFrame)
 iloginFrame.pack(side=ttk.LEFT)
@@ -287,7 +323,10 @@ button_TwoStepLogin = ttk.Button(frame_button, text="登录")
 
 #登录页布局结束,云盘主页布局开始
 
-MenuBar = ttk.Frame(app)
+Home_Frame = ttk.Frame(app)
+
+MenuBar = ttk.Frame(Home_Frame)
+MenuBar.pack(side=ttk.TOP,fill=ttk.X)
 
 fileMenuButton = ttk.Menubutton(MenuBar, text="文件",bootstyle="secondary")
 fileMenuButton.pack(side=ttk.LEFT)
@@ -298,16 +337,29 @@ ViewMenuButton.pack(side=ttk.LEFT)
 HelpMenuButton = ttk.Menubutton(MenuBar, text="帮助",bootstyle="secondary")
 HelpMenuButton.pack(side=ttk.LEFT)
 
+AddressBar = ttk.Entry(MenuBar)
+AddressBar.insert(0,'/')
+AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=30)
+
 accountInfo = ttk.Menubutton(MenuBar, text="读取信息中……",bootstyle="secondary")
 accountInfo.pack(side=ttk.RIGHT)
 
+FileMenu = ttk.Menu(fileMenuButton,relief='raised')
+FileMenu.add_command(label="全部文件")  #/api/v3/directory/
+FileMenu.add_command(label="视频")      #/api/v3/file/search/video/internal
+FileMenu.add_command(label="图片")      #/api/v3/file/search/image/internal
+FileMenu.add_command(label="音乐")      #/api/v3/file/search/audio/internal
+FileMenu.add_command(label="文档")      #/api/v3/file/search/doc/internal
+FileMenu.add_command(label="视频")      #/api/v3/file/search/video/internal
+fileMenuButton.config(menu=FileMenu)
+
 UserMenu = ttk.Menu(accountInfo,relief='raised')
-UserMenu.add_command(label="个人主页")
+UserMenu.add_command(label="个人设置",command=Personal_Settings)
 UserMenu.add_command(label="管理面板")
 UserMenu.add_command(label="退出登录",command=LogOut)
 accountInfo.config(menu=UserMenu)
 
-fileListFrame = ttk.Frame(app)
+fileListFrame = ttk.Frame(Home_Frame)
 fileListFrame.pack(side=ttk.BOTTOM,fill=ttk.BOTH,expand=True)
 
 coldata = [
@@ -317,6 +369,24 @@ coldata = [
 ]
 
 fileList = Tableview(fileListFrame,coldata=coldata)
+fileList.bind("<<TreeviewSelect>>",AnalyzeListClick)
+fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
+
+# 主页布局结束，个人设置页布局开始
+
+Personal_Settings_Frame = ttk.Frame(app)
+
+Personal_Settings_title = ttk.Label(Personal_Settings_Frame,text="个人设置(待开发)",font=("思源黑体", 18))
+Personal_Settings_title.pack(side=ttk.LEFT,padx=10,pady=10)
+
+Personal_Settings_Button_Frame = ttk.Frame(Personal_Settings_Frame)
+Personal_Settings_Button_Frame.pack(side=ttk.RIGHT,padx=10,pady=10)
+
+Personal_Settings_Save = ttk.Button(Personal_Settings_Button_Frame,text="保存",state="disabled")
+Personal_Settings_Save.pack(side=ttk.LEFT,padx=10,pady=10)
+
+Personal_Settings_Cancel = ttk.Button(Personal_Settings_Button_Frame,text="取消",bootstyle="outline",command=Personal_Settings_Back)
+Personal_Settings_Cancel.pack(side=ttk.LEFT,padx=10,pady=10)
 
 app.geometry("%dx%d+%d+%d" % (width, height, left, top))
 app.mainloop()
