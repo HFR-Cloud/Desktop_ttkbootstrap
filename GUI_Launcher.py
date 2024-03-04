@@ -28,11 +28,6 @@ config = ConfigParser()
 config.read('config.ini')
 
 try:
-    AppName = config.get("Program", "AppName")
-except:
-    AppName = "Cloudreve"
-
-try:
     URL = config['account']['url']
 except:
     URL = "http://localhost:5212"
@@ -44,6 +39,12 @@ try:
 except:
     print('没有保存账号密码')
 
+# 获取云盘信息
+Cloud_Info = requests.get(URL + "/manifest.json")
+if Cloud_Info.status_code == 200:
+    Cloud_Info = Cloud_Info.json()
+    Cloud_name = Cloud_Info['short_name']
+
 def SignUP():
     SignUP_URL = URL + "/signup"
     webbrowser.open(SignUP_URL)
@@ -53,6 +54,12 @@ def FogetPassword():
     webbrowser.open(Foget_URL)
 
 def SuccessLogin(response):
+    Login_Frame.pack_forget()
+    Home_Frame.pack(fill=ttk.BOTH, expand=True)
+    app.geometry('800x600')
+    app.place_window_center()
+    TitleShow = '/ - ' + Cloud_name
+    app.title(TitleShow)
     cookies_dict = requests.utils.dict_from_cookiejar(response.cookies) #把cookies转化成字典
     cookies_str = json.dumps(cookies_dict)                              #调用json模块的dumps函数，把cookies从字典再转成字符串。
     cookieWriter = open('cookies.txt', 'w')             #创建名为cookies.txt的文件，以写入模式写入内容
@@ -72,12 +79,6 @@ def SuccessLogin(response):
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     GetDirList()
-    Login_Frame.pack_forget()
-    Home_Frame.pack(fill=ttk.BOTH, expand=True)
-    app.geometry('800x600')
-    app.place_window_center()
-    TitleShow = '/ - ' + AppName
-    app.title(TitleShow)
     RefrushStorage()
 
 def loginOTP():
@@ -85,15 +86,27 @@ def loginOTP():
     config.set('account', 'username', username)
     password = entry_password.get()
     config.set('account', 'password', password)
-    captchaCode = entry_OTP.get()
+    #Copy From login
+    username = entry_username.get()
+    try:
+        config.set('account', 'username', username)
+    except:
+        config.add_section('account')
+        config.set('account', 'username', username)
+    password = entry_password.get()
+    config.set('account', 'password', password)
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     login_data = {
         'username': username,
-        'password': password,
-        'captchaCode': captchaCode
+        'password': password
+    }
+    TwoFACode = entry_OTP.get()
+    TwoFA_data = {
+        'code': TwoFACode
     }
     LOGIN_URL = URL + '/api/v3/user/session'
+    TwoFA_URL = URL + '/api/v3/user/2fa'
     try:
         response = requests.post(LOGIN_URL, json=login_data)
     except ConnectionError:
@@ -102,9 +115,19 @@ def loginOTP():
         pass
     if response.status_code == 200:
         status_code = response.json()['code']
-        if status_code == 0:        #登录成功函数
-            SuccessLogin(response=response)
+        if status_code == 203:    # 需要OTP验证码
+            OTP_Cookies = response.cookies
+            response2 = requests.post(TwoFA_URL, json=TwoFA_data, cookies=OTP_Cookies)
+            if response2.status_code == 200:
+                status_code = response2.json()['code']
+                if status_code == 0:
+                    SuccessLogin(response=response2)
+                elif status_code == 40022:
+                    errorCode.set('OTP验证码错误')
+                else:
+                    print('未知错误：',response2.json())
         else:
+            print(response.json())
             raise Exception("未知错误")
         if status_code != 0:
             loginErrorCode.pack()
@@ -149,13 +172,18 @@ def login():
             errorCode.set('需要OTP验证码')
         elif status_code == 40001:
             errorCode.set('账号密码不能为空')
+            print(response.json())
         elif status_code == 40017:  #账号被封禁
             errorCode.set('账号被封禁')
+            print(response.json())
         elif status_code == 40018:  #账号尚未激活
             errorCode.set('账号尚未激活，请在邮箱中确认')
+            print(response.json())
         elif status_code == 40020:  #用户名或密码错误
             errorCode.set('用户名或密码错误')
+            print(response.json())
         else:
+            print(response.json())
             raise Exception("未知错误")
         if status_code != 0:
             loginErrorCode.pack()
@@ -256,7 +284,7 @@ def Personal_Settings_Back():
 
 app = ttk.Window(themename='superhero')
 # 测试中的功能 - 无边框窗口 app.overrideredirect(True)
-app.title(AppName)
+app.title(Cloud_name)
 screenWidth = app.winfo_screenwidth() # 获取显示区域的宽度
 screenHeight = app.winfo_screenheight() # 获取显示区域的高度
 width = 625 # 设定窗口宽度
@@ -288,7 +316,7 @@ loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
 iloginFrame = ttk.Frame(loginFrame)
 iloginFrame.pack(side=ttk.LEFT)
 
-LoginAppName = '登录 ' + AppName
+LoginAppName = '登录 ' + Cloud_name
 label_APPNAME = ttk.Label(iloginFrame, text=LoginAppName,font=('思源黑体',24))
 label_APPNAME.pack(pady=10)
 
@@ -338,7 +366,7 @@ button_forget.pack(side=ttk.LEFT,padx=10)
 button_BackToLogin = ttk.Button(frame_button, text="返回",bootstyle="outline",command=BackToLogin)
 
 #两步验证登录按钮
-button_TwoStepLogin = ttk.Button(frame_button, text="登录")
+button_TwoStepLogin = ttk.Button(frame_button, text="登录",command=loginOTP)
 
 #登录页布局结束,云盘主页布局开始
 
