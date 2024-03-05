@@ -2,6 +2,8 @@
 
 # Cloudreve Desktop 作者：于小丘 / 暗之旅者
 
+App_Version = "0.0.4"
+
 #导入必要库
 import ttkbootstrap as ttk
 from ttkbootstrap import dialogs
@@ -80,6 +82,12 @@ def SuccessLogin(response):
         config.write(configfile)
     GetDirList()
     RefrushStorage()
+
+def captcha_Login():
+    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
+    session = requests.session()
+    response = session.get(CAPTCHA_GET_URL)
+    print(response.text)
 
 def loginOTP():
     username = entry_username.get()
@@ -182,6 +190,9 @@ def login():
         elif status_code == 40020:  #用户名或密码错误
             errorCode.set('用户名或密码错误')
             print(response.json())
+        elif status_code == 40026:
+            errorCode.set('暂不支持登录带验证码的服务端')
+            captcha_Login()
         else:
             print(response.json())
             raise Exception("未知错误")
@@ -213,8 +224,12 @@ def LogOut():
     if response.status_code == 200:
         status_code = response.json()['code']
         if status_code == 0:        #退出登录成功
-            dialogs.Messagebox.ok(message='退出登录成功，重启应用生效')
-            sys.exit()
+            dialogs.Messagebox.ok(message='退出登录成功')
+            fileList.delete_rows()
+            Home_Frame.pack_forget()
+            app.geometry("623x350")
+            app.place_window_center()
+            Login_Frame.pack()
 
 def convert_size(size_bytes):
     if size_bytes == 0:
@@ -225,6 +240,9 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s%s" % (s, size_name[i])
 
+def filelistonclick():
+    print("检测到filelist被点击")
+
 def GetDirList(path="%2F"):
     ROOTPATH_URL = URL + '/api/v3/directory' + path
     cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
@@ -233,22 +251,33 @@ def GetDirList(path="%2F"):
     session = requests.Session()
     session.cookies = cookies
     response = session.get(ROOTPATH_URL)
-    FileList = json.loads(response.text)
-    objects = FileList['data']['objects']
-    objects_list = []
-    objects = FileList.get('data', {}).get('objects', [])
-    for obj in objects:
-        name = obj.get('name', '')
-        size = obj.get('size', '')
-        size = convert_size(size)
-        if size == '0B':
-            size = ''
-        date = obj.get('date', '').replace('T', ' ').split('.')[0]
-        objects_list.append((name, str(size), date))
-    for itm in objects_list:
-        #fileList.insert("",'end',values=itm)
-        fileList.insert_row('end', itm)
-    fileList.load_table_data()
+    status_code = response.json()['code']
+    if status_code == 0:
+        path2 = path.replace('%2F','/')
+        TitleShow = path2 + ' - ' + Cloud_name
+        app.title(TitleShow)
+        FileList = json.loads(response.text)
+        objects = FileList['data']['objects']
+        objects_list = []
+        objects = FileList.get('data', {}).get('objects', [])
+        for obj in objects:
+            name = obj.get('name', '')
+            size = obj.get('size', '')
+            size = convert_size(size)
+            if size == '0B':
+                size = ''
+            date = obj.get('date', '').replace('T', ' ').split('.')[0]
+            objects_list.append((name, str(size), date))
+        fileList.delete_rows()
+        for itm in objects_list:
+            #fileList.insert("",'end',values=itm)
+            fileList.insert_row('end', itm)
+        fileList.load_table_data()
+    elif status_code == 40016:
+        dialogs.Messagebox.ok(message='目录不存在，请检查')
+
+def ListNewDir(event):
+    GetDirList(AddressBar.get().replace('/', '%2F'))
 
 def AnalyzeListClick(event):
     print('click')
@@ -297,6 +326,12 @@ app.resizable(0,0) #禁止窗口缩放
 
 Login_Frame = ttk.Frame(app)
 Login_Frame.pack()
+
+#底部栏相关
+info_label_text = "App版本：" + App_Version + " | Copyright © 2018-2024 于小丘. All rights reserved."
+info_label = ttk.Label(Login_Frame, text=info_label_text,font=('思源黑体',10))
+info_label.pack(side=ttk.BOTTOM,fill=ttk.X)
+
 try:
     image_path = os.path.join(resources_dir, 'Logo.png')
     image = Image.open(image_path)
@@ -386,7 +421,8 @@ HelpMenuButton.pack(side=ttk.LEFT)
 
 AddressBar = ttk.Entry(MenuBar)
 AddressBar.insert(0,'/')
-AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=30)
+AddressBar.bind('<Return>', ListNewDir)
+AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=40)
 
 accountInfo = ttk.Menubutton(MenuBar, text="读取信息中……",bootstyle="secondary")
 accountInfo.pack(side=ttk.RIGHT)
@@ -416,18 +452,21 @@ coldata = [
 ]
 
 fileList = Tableview(fileListFrame,coldata=coldata)
-fileList.bind("<<TreeviewSelect>>",AnalyzeListClick)
 fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
+fileList.bind("<Double-Button-1>",filelistonclick)
 
 # 主页布局结束，个人设置页布局开始
 
 Personal_Settings_Frame = ttk.Frame(app)
 
 Personal_Settings_title = ttk.Label(Personal_Settings_Frame,text="个人设置(待开发)",font=("思源黑体", 18))
-Personal_Settings_title.pack(side=ttk.LEFT,padx=10,pady=10)
+Personal_Settings_title.pack(anchor="nw",padx=20,pady=20)
+
+Personal_Settings_info = ttk.Label(Personal_Settings_Frame,text="个人资料",font=("思源黑体", 12))
+Personal_Settings_info.pack(anchor="nw",padx=40)
 
 Personal_Settings_Button_Frame = ttk.Frame(Personal_Settings_Frame)
-Personal_Settings_Button_Frame.pack(side=ttk.RIGHT,padx=10,pady=10)
+Personal_Settings_Button_Frame.pack(padx=10,pady=10)
 
 Personal_Settings_Save = ttk.Button(Personal_Settings_Button_Frame,text="保存",state="disabled")
 Personal_Settings_Save.pack(side=ttk.LEFT,padx=10,pady=10)
@@ -436,4 +475,9 @@ Personal_Settings_Cancel = ttk.Button(Personal_Settings_Button_Frame,text="取�
 Personal_Settings_Cancel.pack(side=ttk.LEFT,padx=10,pady=10)
 
 app.geometry("%dx%d+%d+%d" % (width, height, left, top))
+
+# APP布局结束
+
+# TODO：自动登录功能
+
 app.mainloop()
