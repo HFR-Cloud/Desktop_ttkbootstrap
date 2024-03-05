@@ -225,7 +225,7 @@ def LogOut():
         status_code = response.json()['code']
         if status_code == 0:        #退出登录成功
             dialogs.Messagebox.ok(message='退出登录成功')
-            fileList.delete_rows()
+            fileList.delete(*fileList.get_children())   #清空文件列表
             Home_Frame.pack_forget()
             app.geometry("623x350")
             app.place_window_center()
@@ -240,8 +240,17 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s%s" % (s, size_name[i])
 
-def filelistonclick():
-    print("检测到filelist被点击")
+def filelistonclick(event):
+    select_ID = fileList.focus()
+    selected_item_values = fileList.item(select_ID)['values']
+    if str(selected_item_values[2]) == 'dir':
+        if AddressBar.get() == "/":
+            path = AddressBar.get() + str(selected_item_values[0])
+        else:
+            path = AddressBar.get() + "/" + str(selected_item_values[0])
+        GetDirList(path)
+        AddressBar.delete(0, END)
+        AddressBar.insert(0, path)
 
 def GetDirList(path="%2F"):
     ROOTPATH_URL = URL + '/api/v3/directory' + path
@@ -253,6 +262,7 @@ def GetDirList(path="%2F"):
     response = session.get(ROOTPATH_URL)
     status_code = response.json()['code']
     if status_code == 0:
+        fileList.delete(*fileList.get_children())   #清空文件列表
         path2 = path.replace('%2F','/')
         TitleShow = path2 + ' - ' + Cloud_name
         app.title(TitleShow)
@@ -266,21 +276,14 @@ def GetDirList(path="%2F"):
             size = convert_size(size)
             if size == '0B':
                 size = ''
+            type = obj.get('type', '')
             date = obj.get('date', '').replace('T', ' ').split('.')[0]
-            objects_list.append((name, str(size), date))
-        fileList.delete_rows()
+            objects_list.append((name, str(size), type, date))
         for itm in objects_list:
-            #fileList.insert("",'end',values=itm)
-            fileList.insert_row('end', itm)
-        fileList.load_table_data()
-    elif status_code == 40016:
-        dialogs.Messagebox.ok(message='目录不存在，请检查')
+            fileList.insert("",'end',values=itm)
 
 def ListNewDir(event):
     GetDirList(AddressBar.get().replace('/', '%2F'))
-
-def AnalyzeListClick(event):
-    print('click')
 
 def RefrushStorage():
     Require_URL = URL + '/api/v3/user/storage'
@@ -310,6 +313,10 @@ def Personal_Settings():
 def Personal_Settings_Back():
     Personal_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
+
+def CheckAddressBarEmpty(event):
+    if AddressBar.get() == '':
+        AddressBar.insert(0, '/')
 
 app = ttk.Window(themename='superhero')
 # 测试中的功能 - 无边框窗口 app.overrideredirect(True)
@@ -421,6 +428,7 @@ HelpMenuButton.pack(side=ttk.LEFT)
 
 AddressBar = ttk.Entry(MenuBar)
 AddressBar.insert(0,'/')
+AddressBar.bind('<KeyRelease>',CheckAddressBarEmpty)
 AddressBar.bind('<Return>', ListNewDir)
 AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=40)
 
@@ -445,13 +453,7 @@ accountInfo.config(menu=UserMenu)
 fileListFrame = ttk.Frame(Home_Frame)
 fileListFrame.pack(side=ttk.BOTTOM,fill=ttk.BOTH,expand=True)
 
-coldata = [
-    {"text": "名称", "stretch": True},
-    "大小",
-    {"text": "修改日期", "stretch": True},
-]
-
-fileList = Tableview(fileListFrame,coldata=coldata)
+fileList = ttk.Treeview(fileListFrame,columns=["名称","大小","类型","修改日期"],show=HEADINGS)
 fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
 fileList.bind("<Double-Button-1>",filelistonclick)
 
