@@ -231,6 +231,13 @@ def LogOut():
             app.place_window_center()
             Login_Frame.pack()
 
+def last_dir(s):
+    dir = s[:s.rfind('/')] if '/' in s else ''
+    if dir == '':
+        return "/"
+    else:
+        return dir
+
 def convert_size(size_bytes):
     if size_bytes == 0:
         return '0B'
@@ -243,6 +250,9 @@ def convert_size(size_bytes):
 def filelistonclick(event):
     select_ID = fileList.focus()
     selected_item_values = fileList.item(select_ID)['values']
+    if str(selected_item_values[0]) == '../':
+        path = last_dir(AddressBar.get())
+        GetDirList(path)
     if str(selected_item_values[2]) == 'dir':
         if AddressBar.get() == "/":
             path = AddressBar.get() + str(selected_item_values[0])
@@ -251,6 +261,13 @@ def filelistonclick(event):
         GetDirList(path)
         AddressBar.delete(0, END)
         AddressBar.insert(0, path)
+        # 如果不是在根目录，则在文件列表顶部插入一个../返回上级目录
+        if AddressBar.get() != '/':
+            fileList.insert("",'0',values=('../', '', '上级目录', ''))
+    elif str(selected_item_values[2]) == '上级目录':
+        pass
+    else:
+        dialogs.Messagebox.ok(message='暂不支持文件操作')        
 
 def GetDirList(path="%2F"):
     ROOTPATH_URL = URL + '/api/v3/directory' + path
