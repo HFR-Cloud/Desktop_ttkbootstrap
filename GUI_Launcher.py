@@ -28,7 +28,7 @@ config.read('config.ini')
 try:
     URL = config['account']['url']
 except:
-    URL = "http://localhost:5212"
+    URL = "https://pan.xiaoqiu.in"
 
 # 从本机中读取账号密码，这一功能在后续会添加加密读取
 try:
@@ -56,7 +56,7 @@ def FogetPassword():
 # 登录成功后执行
 def SuccessLogin(response,WhenStart=False):
     if WhenStart:
-        AutoLoginURL = URL + "/api/v3/site/config"      #返回预览：{"code": 0,"data": {"title": "Cloudreve","loginCaptcha": false,"regCaptcha": false,"forgetCaptcha": false,"emailActive": false,"themes": "{\"#3f51b5\":{\"palette\":{\"primary\":{\"main\":\"#3f51b5\"},\"secondary\":{\"main\":\"#f50057\"}}},\"#2196f3\":{\"palette\":{\"primary\":{\"main\":\"#2196f3\"},\"secondary\":{\"main\":\"#FFC107\"}}},\"#673AB7\":{\"palette\":{\"primary\":{\"main\":\"#673AB7\"},\"secondary\":{\"main\":\"#2196F3\"}}},\"#E91E63\":{\"palette\":{\"primary\":{\"main\":\"#E91E63\"},\"secondary\":{\"main\":\"#42A5F5\",\"contrastText\":\"#fff\"}}},\"#FF5722\":{\"palette\":{\"primary\":{\"main\":\"#FF5722\"},\"secondary\":{\"main\":\"#3F51B5\"}}},\"#FFC107\":{\"palette\":{\"primary\":{\"main\":\"#FFC107\"},\"secondary\":{\"main\":\"#26C6DA\"}}},\"#8BC34A\":{\"palette\":{\"primary\":{\"main\":\"#8BC34A\",\"contrastText\":\"#fff\"},\"secondary\":{\"main\":\"#FF8A65\",\"contrastText\":\"#fff\"}}},\"#009688\":{\"palette\":{\"primary\":{\"main\":\"#009688\"},\"secondary\":{\"main\":\"#4DD0E1\",\"contrastText\":\"#fff\"}}},\"#607D8B\":{\"palette\":{\"primary\":{\"main\":\"#607D8B\"},\"secondary\":{\"main\":\"#F06292\"}}},\"#795548\":{\"palette\":{\"primary\":{\"main\":\"#795548\"},\"secondary\":{\"main\":\"#4CAF50\",\"contrastText\":\"#fff\"}}}}","defaultTheme": "#3f51b5","home_view_method": "icon","share_view_method": "list","authn": false,"user": {"id": "kpcv","user_name": "admin@yuxiaoqiu.cn","nickname": "于小丘 测试","status": 0,"avatar": "file","created_at": "2024-02-29T22:22:05.0800767+08:00","preferred_theme": "","anonymous": false,"group": {"id": 1,"name": "Admin","allowShare": true,"allowRemoteDownload": true,"allowArchiveDownload": true,"shareDownload": true,"compress": true,"webdav": true,"sourceBatch": 1000,"advanceDelete": true,"allowWebDAVProxy": true},"tags": []},"captcha_ReCaptchaKey": "defaultKey","captcha_type": "normal","tcaptcha_captcha_app_id": "","registerEnabled": true,"app_promotion": true,"wopi_exts": null},"msg": ""}
+        AutoLoginURL = URL + "/api/v3/site/config"
         cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
         cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
         cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
@@ -254,6 +254,9 @@ def BackToLogin():
     button_forget.pack(side=ttk.LEFT,padx=10)
     frame_button.pack(pady=5)
     loginErrorCode.pack_forget()
+    entry_username.config(state='normal')
+    entry_password.config(state='normal')
+    button_login.config(state='normal')
 
 # 退出登录相关
 def LogOut():
@@ -374,7 +377,7 @@ def RefrushStorage():
     session = requests.Session()
     session.keep_alive = False
     session.cookies = cookies
-    response = session.get(Require_URL)             #返回内容 {"code":0,"data":{"used":896322996,"free":177418828,"total":1073741824},"msg":""}
+    response = session.get(Require_URL)
     Storage = json.loads(response.text)
     used = convert_size(Storage['data']['used'])
     total = convert_size(Storage['data']['total'])
