@@ -6,7 +6,9 @@
 
 ## 目前已经实现的功能
 - 登录 & 注销
-- 文件夹浏览（需要使用地址栏，列表暂时无法点击）
+- 文件夹浏览
+- txt与py预览
+- WebDAV列表
 
 ## 目前未实现但严重影响体验的功能
 - 无法登录需要验证码的Cloudreve
@@ -27,7 +29,7 @@ url = http://localhost:5212
 如果是本地调试，则无需新建`config.ini`，程序会自动填充http://localhost:5212
 
 ## 启动&构建方式
-将完整代码拉取到本地（Resources可选，若不拉取会以`Tiny`模式启动）
+将完整代码拉取到本地（也可仅拉取`GUI_Launcher.py`，程序会以`Tiny`模式启动 **但非常不建议这样做** ）
 
 Windows:
 双击GUI_Launcher.py即可启动
@@ -36,4 +38,4 @@ Linux:
 使用`chomod +x GUI_Launcher.py`命令后再使用`./GUI_Launcher.py`即可启动。
 
 ## 开源许可
-本程序暂时闭源，后续可能会考虑开源，请持续关注。
+本程序暂时闭源，后续小概率开源
