@@ -2,14 +2,16 @@
 
 # Cloudreve Desktop 作者：于小丘 / 暗之旅者
 
-App_Version = "0.1.0"
+# 填充程序信息
+App_Version = "0.1.1"
 
 #导入必要库
 import ttkbootstrap as ttk
+from tkinter import filedialog
 from ttkbootstrap import dialogs
 from ttkbootstrap.constants import *
 from PIL import Image, ImageTk
-import os,requests,json,math,http.cookiejar,webbrowser,sys
+import os,requests,json,math,http.cookiejar,webbrowser,sys,threading,windnd,hashlib
 from configparser import ConfigParser
 
 #登录页图片展示准备
@@ -28,8 +30,7 @@ config.read('config.ini')
 try:
     URL = config['account']['url']
 except:
-    URL = "https://pan.xiaoqiu.in"
-    # URL = "http://localhost:5212"
+    URL = "http://localhost:5212"
 
 try:
     Fonts = config['settings']['fonts']
@@ -40,20 +41,50 @@ except:
 try:
     localaccount = localpassword = ""
     localaccount = config.get('account','username')
-    localpassword = config.get('account','password')
 except:
     print('没有保存账号密码')
 
 # 获取云盘信息
 try:
-    Cloud_Info = requests.get(URL + "/manifest.json")
+    Cloud_Info = requests.get(URL + "/api/v3/site/config")
     if Cloud_Info.status_code == 200:
         Cloud_Info = Cloud_Info.json()
-        Cloud_name = Cloud_Info['short_name']
-    Cloud_Version = requests.get(URL + "/api/v3/site/ping").json()['data']
+        Cloud_name = Cloud_Info['data']['title']
+        captcha_Type = Cloud_Info['data']['captcha_type']
+        Login_captcha = Cloud_Info['data']['loginCaptcha']
+        print(Login_captcha)
+        if captcha_Type == 'recaptcha' and Login_captcha == True:
+            dialogs.Messagebox.show_error(message='暂不支持登录reCaptcha的服务端')
+            sys.exit()
+        elif captcha_Type == 'tcaptcha' and Login_captcha == True:
+            dialogs.Messagebox.show_error(message='暂不支持登录腾讯云验证码的服务端')
+            sys.exit()
+    # Cloud_Version = requests.get(URL + "/api/v3/site/ping").json()['data']
 except:
-    dialogs.Messagebox.show_error(message='无法连接到Cloudreve，请检查网络或Cloudreve地址')
+    dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端')
     sys.exit()
+
+# 初始化软件服务
+def init():
+    entry_username.config(state='disabled')
+    entry_password.config(state='disabled')
+    button_login.config(state='disabled')
+    errorCode.set('正在自动登录……')
+    loginErrorCode.pack()
+    
+    # 自动登录
+    try:
+        SuccessLogin('',True)
+    except:
+        entry_username.config(state='normal')
+        entry_password.config(state='normal')
+        button_login.config(state='normal')
+        errorCode.set('自动登录失败，请手动登录')
+        Home_Frame.pack_forget()
+        app.geometry("623x350")
+        app.title(Cloud_name)
+        app.place_window_center()
+        Login_Frame.pack()
 
 # 注册与忘记密码跳转网页
 def SignUP():
@@ -115,6 +146,8 @@ def SuccessLogin(response,WhenStart=False):
         config.write(configfile)
     GetDirList()
     RefrushStorage()
+    #message = str(response.json())
+    #dialogs.Messagebox.show_info(message=message)
 
 # TODO：带验证码的登录
 def captcha_Login():
@@ -125,7 +158,14 @@ def captcha_Login():
     print(response.text)
 
 # OTP登录
+
 def loginOTP():
+    entry_OTP.config(state='disabled')
+    button_TwoStepLogin.config(state='disabled')
+    button_BackToLogin.config(state='disabled')
+    threading.Thread(target=loginOTP_Process).start()
+
+def loginOTP_Process():
     username = entry_username.get()
     config.set('account', 'username', username)
     password = entry_password.get()
@@ -181,6 +221,12 @@ def login():
     entry_username.config(state='disabled')
     entry_password.config(state='disabled')
     button_login.config(state='disabled')
+
+    # 创建新线程来处理登录过程
+    login_thread = threading.Thread(target=login_process)
+    login_thread.start()
+
+def login_process():
     username = entry_username.get()
     try:
         config.set('account', 'username', username)
@@ -188,7 +234,6 @@ def login():
         config.add_section('account')
         config.set('account', 'username', username)
     password = entry_password.get()
-    config.set('account', 'password', password)
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     login_data = {
@@ -271,6 +316,9 @@ def BackToLogin():
 
 # 退出登录相关
 def LogOut():
+    # 创建新线程来处理退出登录过程
+    fileList.delete(*fileList.get_children())   #清空文件列表
+    fileList.insert("",'0',values=('正在退出登录', '', 'loading', ''))
     ROOTPATH_URL = URL + '/api/v3/user/session'
     cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
     cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
@@ -288,6 +336,10 @@ def LogOut():
             app.title(Cloud_name)
             app.geometry("623x350")
             app.place_window_center()
+            loginErrorCode.pack_forget()
+            entry_username.config(state='normal')
+            entry_password.config(state='normal')
+            button_login.config(state='normal')
             Login_Frame.pack()
 
 # 获取文件后缀的处理
@@ -313,6 +365,10 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s%s" % (s, size_name[i])
 
+def loadingFileListGUI():
+    fileList.delete(*fileList.get_children())   #清空文件列表
+    fileList.insert("",'0',values=('玩命加载中', '', 'loading', ''))
+
 # 文件列表双击事件，处理文件（夹）打开
 def filelistonclick(event):
     select_ID = fileList.focus()
@@ -323,16 +379,20 @@ def filelistonclick(event):
         if selected_item_values != '':
             if str(selected_item_values[0]) == '../':
                 path = last_dir(AddressBar.get())
+                loadingFileListGUI()
                 GetDirList(path)
             elif str(selected_item_values[2]) == 'dir':
                 if AddressBar.get() == "/":
                     path = AddressBar.get() + choose_name
                 else:
                     path = AddressBar.get() + "/" + choose_name
+                loadingFileListGUI()
                 GetDirList(path)
             elif str(selected_item_values[2]) == '上级目录':
                 pass
-            elif get_last_part(choose_name).lower() == 'txt' or get_last_part(choose_name).lower() == 'py':
+            elif str(selected_item_values[2]) == 'loading':
+                pass
+            elif get_last_part(choose_name).lower() == 'txt' or get_last_part(choose_name).lower() == 'py' or get_last_part(choose_name).lower() == 'c' or get_last_part(choose_name).lower() == 'cpp' or get_last_part(choose_name).lower() == 'md':
                 FilePreview_title.config(text=choose_name)
                 Preview_Url = URL + "/api/v3/file/content/" + str(selected_item_values[4])
                 cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
@@ -423,6 +483,19 @@ def GetDirList(path="%2F",WhenStart=False):
 def ListNewDir(event):
     GetDirList(AddressBar.get().replace('/', '%2F'))
 
+# 处理文件拖入窗口上传事件
+def Dragged_Files(files):
+    msg = '\n'.join((item.decode('utf-8') for item in files))
+    msg = '您拖放的文件：\n' + msg
+    dialogs.Messagebox.show_info(message=msg)
+
+def UploadFile():
+    filename = filedialog.askopenfilename()
+    print(filename)
+
+def DownloadFile(fileID):
+    Download_URL = URL + '/api/v3/file/download/' + fileID
+
 # 刷新用户容量函数
 def RefrushStorage():
     Require_URL = URL + '/api/v3/user/storage'
@@ -449,8 +522,12 @@ def filePreview_Back():
     textbox.delete(1.0,END)
 
 # 处理密码框回车即登录事件
-def on_enter_pressed(event):
+def Password_Entry_on_enter_pressed(event):
     login()
+
+# 处理OTP框回车即登录事件
+def OTP_Entry_on_enter_pressed(event):
+    loginOTP()
 
 # 右键刷新事件
 def ReFrush():
@@ -547,10 +624,11 @@ Login_Frame = ttk.Frame(app)
 Login_Frame.pack(anchor=ttk.CENTER)
 
 #底部栏相关
-info_label_text = "App版本：" + App_Version + " 功能补全开发版本，Cloudreve版本：" + Cloud_Version + " | 2018-2024 于小丘 版权所有。\n继续使用本软件即代表同意本软件与您登录的Cloudreve服务商的用户协议与隐私政策。"
+info_label_text = "App版本：" + App_Version + " 功能补全开发版本 | 2018-2024 于小丘 版权所有。\n继续使用本软件即代表同意本软件与您登录的Cloudreve服务商的用户协议与隐私政策。"
 info_label = ttk.Label(Login_Frame, text=info_label_text,font=(Fonts,10))
 info_label.pack(side=ttk.BOTTOM,fill=ttk.X)
 
+# 登录页图片展示
 try:
     image_path = os.path.join(resources_dir, 'Logo.png')
     image = Image.open(image_path)
@@ -579,9 +657,14 @@ loginErrorCode = ttk.Label(iloginFrame, bootstyle="danger",font=(Fonts,12),textv
 
 frame_username = ttk.Frame(iloginFrame)
 frame_username.pack(pady=5)
+
 frame_password = ttk.Frame(iloginFrame)
 frame_password.pack(pady=5)
+
+frame_captcha = ttk.Frame(iloginFrame)
+
 frame_OTP = ttk.Frame(iloginFrame)
+
 frame_button = ttk.Frame(iloginFrame)
 frame_button.pack(pady=5)
 
@@ -598,14 +681,17 @@ label_password.pack(side=ttk.LEFT)
 entry_password = ttk.Entry(frame_password, show="*")
 entry_password.insert(0,localpassword)
 entry_password.pack(side=ttk.LEFT,ipadx=30,padx=5)
-entry_password.bind('<Return>', on_enter_pressed)
+entry_password.bind('<Return>', Password_Entry_on_enter_pressed)
+
+entry_captcha = ttk.Entry(frame_password)
 
 label_OTP = ttk.Label(frame_OTP, text="验证码:",font=(Fonts,12))
 label_OTP.pack(side=ttk.LEFT)
 entry_OTP = ttk.Entry(frame_OTP)
 entry_OTP.pack(side=ttk.LEFT,ipadx=30,padx=5)
+entry_OTP.bind('<Return>', OTP_Entry_on_enter_pressed)
 
-button_login = ttk.Button(frame_button, text="登录", command=login)
+button_login = ttk.Button(frame_button, text="登录", command=login,)
 button_login.pack(side=ttk.LEFT,ipadx=20,padx=5)
 
 #注册按钮相关
@@ -685,11 +771,12 @@ filelistStyle.configure("Treeview",rowheight=25)
 fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
 fileList.bind("<Double-Button-1>",filelistonclick)
 fileList.bind("<Button-3>",filelistonrightclick)
+windnd.hook_dropfiles(fileList, func=Dragged_Files)
 
 fileList_Menu_No_Select = ttk.Menu(app)
 fileList_Menu_No_Select.add_command(label="刷新",font=(Fonts,10),command=ReFrush)
 fileList_Menu_No_Select.add_separator()
-fileList_Menu_No_Select.add_command(label="上传文件",font=(Fonts,10))
+fileList_Menu_No_Select.add_command(label="上传文件",font=(Fonts,10),command=UploadFile)
 fileList_Menu_No_Select.add_command(label="上传目录",font=(Fonts,10))
 fileList_Menu_No_Select.add_command(label="离线下载",font=(Fonts,10))
 fileList_Menu_No_Select.add_separator()
@@ -772,6 +859,7 @@ WebDAV_List.bind("<Button-3>",WebDAV_List_Click)
 WebDAV_List.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
 
 WebDAV_Menu = ttk.Menu(app)
+WebDAV_Menu.add_command(label="复制密码")
 WebDAV_Menu.add_command(label="开启 / 关闭只读")
 WebDAV_Menu.add_command(label="开启 / 关闭反代")
 WebDAV_Menu.add_command(label="删除")
@@ -803,15 +891,10 @@ Manage_Panel_title.pack(anchor="nw",padx=20,pady=20)
 
 # APP布局结束
 
-# 自动登录
-try:
-    SuccessLogin('',True)
-except:
-    Home_Frame.pack_forget()
-    app.geometry("623x350")
-    app.title(Cloud_name)
-    app.place_window_center()
-    Login_Frame.pack()
+# 程序初始化线程
+init_thread = threading.Thread(target=init)
+init_thread.start()
 
+# 程序主循环
 app.place_window_center()
 app.mainloop()
