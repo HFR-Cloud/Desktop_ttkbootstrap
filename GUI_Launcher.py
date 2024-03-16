@@ -11,7 +11,7 @@ from tkinter import filedialog
 from ttkbootstrap import dialogs
 from ttkbootstrap.constants import *
 from PIL import Image, ImageTk
-import os,requests,json,math,http.cookiejar,webbrowser,sys,threading,windnd,hashlib
+import os,requests,json,math,http.cookiejar,webbrowser,sys,threading,windnd,pyotp,base64,io
 from configparser import ConfigParser
 
 #登录页图片展示准备
@@ -26,12 +26,22 @@ cookie_jar = http.cookiejar.CookieJar()
 config = ConfigParser()
 config.read('config.ini')
 
+# 主题配置文件预载（如果配置文件不存在则预载深色模式）
+try:
+    if config['settings']['theme'] == 'light':
+        theme = {'Theme':"litera",'Menu':'light'}
+    else:
+        theme = {'Theme':"superhero",'Menu':'secondary'}
+except:
+    theme = {'Theme':"superhero",'Menu':'secondary'}
+
 # 设置配置文件中目标Cloudreve的地址，没有则默认连接本机Cloudreve
 try:
     URL = config['account']['url']
 except:
-    URL = "http://localhost:5212"
+    URL = "http://127.0.0.1:5212"
 
+# 设置配置文件中的字体，没有则默认使用思源黑体，如果系统未安装思源黑体则使用默认字体
 try:
     Fonts = config['settings']['fonts']
 except:
@@ -39,10 +49,31 @@ except:
 
 # 从本机中读取账号密码，这一功能在后续会添加加密读取
 try:
-    localaccount = localpassword = ""
     localaccount = config.get('account','username')
+    otp_key = pyotp.TOTP(config.get('account','OTPKey'))
 except:
-    print('没有保存账号密码')
+    pass
+
+# TODO：带验证码的登录
+def captcha_Login():
+    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
+    cookies_txt = open('cookies.txt', 'r')          
+    cookies_dict = json.loads(cookies_txt.read())   
+    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  
+    session = requests.session()
+    session.cookies = cookies
+    session.keep_alive = False
+    response = session.get(CAPTCHA_GET_URL)
+    status_code = response.json()['code']
+    if status_code == 0:
+        base64_string = response.json()['data']
+        prefix = "data:image/png;base64,"
+        base64_string = base64_string[len(prefix):]
+        image_bytes = base64.b64decode(base64_string)
+        image = Image.open(io.BytesIO(image_bytes))
+        captcha_photo = ImageTk.PhotoImage(image)
+        label_captcha_Pic.config(image=captcha_photo)
+        label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
 
 # 获取云盘信息
 try:
@@ -52,7 +83,6 @@ try:
         Cloud_name = Cloud_Info['data']['title']
         captcha_Type = Cloud_Info['data']['captcha_type']
         Login_captcha = Cloud_Info['data']['loginCaptcha']
-        print(Login_captcha)
         if captcha_Type == 'recaptcha' and Login_captcha == True:
             dialogs.Messagebox.show_error(message='暂不支持登录reCaptcha的服务端')
             sys.exit()
@@ -81,10 +111,14 @@ def init():
         button_login.config(state='normal')
         errorCode.set('自动登录失败，请手动登录')
         Home_Frame.pack_forget()
-        app.geometry("623x350")
+        app.geometry("623x400")
         app.title(Cloud_name)
         app.place_window_center()
         Login_Frame.pack()
+    
+    # 刷新验证码
+    if Login_captcha:
+        captcha_Login()
 
 # 注册与忘记密码跳转网页
 def SignUP():
@@ -149,16 +183,34 @@ def SuccessLogin(response,WhenStart=False):
     #message = str(response.json())
     #dialogs.Messagebox.show_info(message=message)
 
-# TODO：带验证码的登录
-def captcha_Login():
+# 刷新验证码
+def RefrushCaptcha(event):
     CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
+    cookies_txt = open('cookies.txt', 'r')          
+    cookies_dict = json.loads(cookies_txt.read())   
+    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  
     session = requests.session()
+    session.cookies = cookies
     session.keep_alive = False
     response = session.get(CAPTCHA_GET_URL)
-    print(response.text)
+    status_code = response.json()['code']
+    if status_code == 0:
+        base64_string = response.json()['data']
+        prefix = "data:image/png;base64,"
+        base64_string = base64_string[len(prefix):]
+        image_bytes = base64.b64decode(base64_string)
+        image = Image.open(io.BytesIO(image_bytes))
+        captcha_photo = ImageTk.PhotoImage(image)
+        label_captcha_Pic.config(image=captcha_photo)
+        label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
+        #写入Cookies
+        cookies_dict = requests.utils.dict_from_cookiejar(response.cookies) #把cookies转化成字典
+        cookies_str = json.dumps(cookies_dict)                              #调用json模块的dumps函数，把cookies从字典再转成字符串。
+        cookieWriter = open('cookies.txt', 'w')             #创建名为cookies.txt的文件，以写入模式写入内容
+        cookieWriter.write(cookies_str)
+        cookieWriter.close()
 
 # OTP登录
-
 def loginOTP():
     entry_OTP.config(state='disabled')
     button_TwoStepLogin.config(state='disabled')
@@ -169,16 +221,12 @@ def loginOTP_Process():
     username = entry_username.get()
     config.set('account', 'username', username)
     password = entry_password.get()
-    config.set('account', 'password', password)
-    #Copy From login
-    username = entry_username.get()
     try:
         config.set('account', 'username', username)
     except:
         config.add_section('account')
         config.set('account', 'username', username)
     password = entry_password.get()
-    config.set('account', 'password', password)
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     login_data = {
@@ -228,21 +276,34 @@ def login():
 
 def login_process():
     username = entry_username.get()
+    password = entry_password.get()
+    captcha = entry_captcha.get()
     try:
         config.set('account', 'username', username)
     except:
         config.add_section('account')
         config.set('account', 'username', username)
-    password = entry_password.get()
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     login_data = {
         'username': username,
-        'password': password
+        'password': password,
+        'captchaCode': captcha
     }
     LOGIN_URL = URL + '/api/v3/user/session'
     try:
-        response = requests.post(LOGIN_URL, json=login_data)
+        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    except:
+        pass
+    session = requests.Session()
+    try:
+        session.cookies = cookies
+    except:
+        pass
+    try:
+        response = session.post(LOGIN_URL, json=login_data)
     except ConnectionError:
         errorCode.set('无法连接到服务器')
         loginErrorCode.pack()
@@ -266,6 +327,12 @@ def login_process():
             frame_button.pack_forget()
             frame_button.pack(pady=5)
             errorCode.set('需要OTP验证码')
+            otp_code = otp_key.now()
+            try:
+                entry_OTP.insert(0,otp_code)
+                loginOTP()
+            except:
+                pass
         elif status_code == 40001:
             errorCode.set('账号密码不能为空')
             entry_username.config(state='normal')
@@ -288,7 +355,11 @@ def login_process():
             button_login.config(state='normal')
             print(response.json())
         elif status_code == 40026:
-            errorCode.set('暂不支持登录带验证码的服务端')
+            errorCode.set('验证码错误')
+            entry_username.config(state='normal')
+            entry_password.config(state='normal')
+            button_login.config(state='normal')
+            print(response.text)
             captcha_Login()
         else:
             print(response.json())
@@ -334,7 +405,7 @@ def LogOut():
             fileList.delete(*fileList.get_children())   #清空文件列表
             Home_Frame.pack_forget()
             app.title(Cloud_name)
-            app.geometry("623x350")
+            app.geometry("623x400")
             app.place_window_center()
             loginErrorCode.pack_forget()
             entry_username.config(state='normal')
@@ -365,6 +436,7 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s%s" % (s, size_name[i])
 
+# 文件加载时显示加载中（已弃用）
 def loadingFileListGUI():
     fileList.delete(*fileList.get_children())   #清空文件列表
     fileList.insert("",'0',values=('玩命加载中', '', 'loading', ''))
@@ -489,10 +561,25 @@ def Dragged_Files(files):
     msg = '您拖放的文件：\n' + msg
     dialogs.Messagebox.show_info(message=msg)
 
+# 切换主题
+def SwitchTheme():
+    if app.theme == 'superhero':
+        app.set_theme('')
+    elif app.theme == 'darkly':
+        app.set_theme('superhero')
+
+# 上传文件事件
 def UploadFile():
     filename = filedialog.askopenfilename()
-    print(filename)
+    if filename != "":
+        UploadApp = ttk.Window(title='上传文件',themename=theme['Theme'])
+        UploadApp.geometry('400x200')
+        UploadApp.resizable(0,0)
 
+        fileNameFrame = ttk.Frame(UploadApp)
+        filePath = ttk.Label(fileNameFrame, text=filename)
+
+# 下载文件事件
 def DownloadFile(fileID):
     Download_URL = URL + '/api/v3/file/download/' + fileID
 
@@ -521,8 +608,8 @@ def filePreview_Back():
     Home_Frame.pack(fill=BOTH, expand=YES)
     textbox.delete(1.0,END)
 
-# 处理密码框回车即登录事件
-def Password_Entry_on_enter_pressed(event):
+# 处理密码框与验证码框回车即登录事件
+def Entry_on_enter_pressed(event):
     login()
 
 # 处理OTP框回车即登录事件
@@ -608,11 +695,14 @@ def ExitAPP():
 ======================================
 """
 
-app = ttk.Window(themename="superhero")
+app = ttk.Window()
 # 无边框窗口 app.overrideredirect(True)
-app.geometry("623x350")
-app.resizable(0,0) #禁止窗口缩放
+app.geometry("623x400")
+#app.resizable(0,0) #禁止窗口缩放
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
+
+app_style = ttk.Style()
+app_style.theme_use(theme['Theme'])
 
 try:
     app.iconbitmap('favicon.ico')
@@ -624,7 +714,7 @@ Login_Frame = ttk.Frame(app)
 Login_Frame.pack(anchor=ttk.CENTER)
 
 #底部栏相关
-info_label_text = "App版本：" + App_Version + " 功能补全开发版本 | 2018-2024 于小丘 版权所有。\n继续使用本软件即代表同意本软件与您登录的Cloudreve服务商的用户协议与隐私政策。"
+info_label_text = "App版本：" + App_Version + " 功能补全开发版本 | 2018-2024 于小丘 版权所有。\n继续使用本软件即代表同意本软件与您登录的服务商的用户协议与隐私政策。"
 info_label = ttk.Label(Login_Frame, text=info_label_text,font=(Fonts,10))
 info_label.pack(side=ttk.BOTTOM,fill=ttk.X)
 
@@ -662,6 +752,8 @@ frame_password = ttk.Frame(iloginFrame)
 frame_password.pack(pady=5)
 
 frame_captcha = ttk.Frame(iloginFrame)
+if Login_captcha:
+    frame_captcha.pack(pady=5)
 
 frame_OTP = ttk.Frame(iloginFrame)
 
@@ -679,11 +771,19 @@ label_password = ttk.Label(frame_password, text="密    码:",font=(Fonts,12))
 label_password.pack(side=ttk.LEFT)
 
 entry_password = ttk.Entry(frame_password, show="*")
-entry_password.insert(0,localpassword)
 entry_password.pack(side=ttk.LEFT,ipadx=30,padx=5)
-entry_password.bind('<Return>', Password_Entry_on_enter_pressed)
+entry_password.bind('<Return>', Entry_on_enter_pressed)
 
-entry_captcha = ttk.Entry(frame_password)
+label_captcha = ttk.Label(frame_captcha, text="验证码:",font=(Fonts,12))
+label_captcha.pack(side=ttk.LEFT)
+
+entry_captcha = ttk.Entry(frame_captcha)
+entry_captcha.pack(side=ttk.LEFT,ipadx=30,padx=5)
+entry_captcha.bind('<Return>', Entry_on_enter_pressed)
+
+label_captcha_Pic = ttk.Label(iloginFrame)
+label_captcha_Pic.pack(pady=5)
+label_captcha_Pic.bind("<Button-1>", RefrushCaptcha)
 
 label_OTP = ttk.Label(frame_OTP, text="验证码:",font=(Fonts,12))
 label_OTP.pack(side=ttk.LEFT)
@@ -691,7 +791,7 @@ entry_OTP = ttk.Entry(frame_OTP)
 entry_OTP.pack(side=ttk.LEFT,ipadx=30,padx=5)
 entry_OTP.bind('<Return>', OTP_Entry_on_enter_pressed)
 
-button_login = ttk.Button(frame_button, text="登录", command=login,)
+button_login = ttk.Button(frame_button, text="登录", command=login)
 button_login.pack(side=ttk.LEFT,ipadx=20,padx=5)
 
 #注册按钮相关
@@ -715,18 +815,18 @@ Home_Frame = ttk.Frame(app)
 MenuBar = ttk.Frame(Home_Frame)
 MenuBar.pack(side=ttk.TOP,fill=ttk.X)
 
-fileMenuButton = ttk.Menubutton(MenuBar, text="📁 文件",bootstyle="secondary")
+fileMenuButton = ttk.Menubutton(MenuBar, text="📁 文件",bootstyle=theme['Menu'])
 fileMenuButton.pack(side=ttk.LEFT)
-HelpMenuButton = ttk.Menubutton(MenuBar, text="⚙️ 实验室",bootstyle="secondary")
+HelpMenuButton = ttk.Menubutton(MenuBar, text="⚙️ 实验室",bootstyle=theme['Menu'])
 HelpMenuButton.pack(side=ttk.LEFT)
 
 AddressBar = ttk.Entry(MenuBar)
 AddressBar.insert(0,'/')
 AddressBar.bind('<KeyRelease>',CheckAddressBarEmpty)
 AddressBar.bind('<Return>', ListNewDir)
-AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=40)
+AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=120)
 
-accountInfo = ttk.Menubutton(MenuBar, text="读取信息中……",bootstyle="secondary")
+accountInfo = ttk.Menubutton(MenuBar, text="读取信息中……",bootstyle=theme['Menu'])
 accountInfo.pack(side=ttk.RIGHT)
 
 FileMenu = ttk.Menu(fileMenuButton,relief='raised')
