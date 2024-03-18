@@ -3,7 +3,7 @@
 # HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.3"
+App_Version = "0.1.4"
 
 # 填充国际化信息
 zh_CN = {"login":"登录","username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码"}
@@ -133,9 +133,9 @@ def init():
         errorCode.set('自动登录失败，请手动登录')
         Home_Frame.pack_forget()
         if Login_captcha:
-            app.geometry("623x400")
+            app.geometry("623x450")
         else:
-            app.geometry("623x350")
+            app.geometry("623x400")
         app.title(Cloud_name)
         app.place_window_center()
         Login_Frame.pack()
@@ -433,9 +433,9 @@ def LogOut():
             Home_Frame.pack_forget()
             app.title(Cloud_name)
             if Login_captcha:
-                app.geometry("623x400")
+                app.geometry("623x450")
             else:
-                app.geometry("623x350")
+                app.geometry("623x400")
             app.place_window_center()
             loginErrorCode.pack_forget()
             entry_username.config(state='normal')
@@ -480,13 +480,13 @@ def filelistonclick(event):
         fileType = get_last_part(choose_name).lower()
         if selected_item_values != '':
             if str(selected_item_values[0]) == '../':
-                path = last_dir(AddressBar.get())
+                path = last_dir(RealAddress)
                 GetDirList(path)
             elif str(selected_item_values[2]) == 'dir':
-                if AddressBar.get() == "/":
-                    path = AddressBar.get() + choose_name
+                if RealAddress == "/":
+                    path = RealAddress + choose_name
                 else:
-                    path = AddressBar.get() + "/" + choose_name
+                    path = RealAddress + "/" + choose_name
                 GetDirList(path)
             elif str(selected_item_values[2]) == '上级目录':
                 pass
@@ -547,6 +547,8 @@ def GetDirList(path="%2F",WhenStart=False):
             fileList.insert("",'0',values=('../', '', '上级目录', ''))
         AddressBar.delete(0, END)
         AddressBar.insert(0, path2)
+        global RealAddress
+        RealAddress = AddressBar.get()
         TitleShow = path2 + ' - ' + Cloud_name
         app.title(TitleShow)
         FileList = json.loads(response.text)
@@ -581,7 +583,11 @@ def GetDirList(path="%2F",WhenStart=False):
 
 # 处理地址栏更改后刷新文件列表事件
 def ListNewDir(event):
-    GetDirList(AddressBar.get().replace('/', '%2F'))
+    Address = AddressBar.get()
+    if Address == '/':
+        GetDirList(RealAddress.replace('/', '%2F'))
+    else:
+        SearchFile(Address)
 
 # 处理文件拖入窗口上传事件
 def Dragged_Files(files):
@@ -643,9 +649,72 @@ def RefrushStorage():
     accountText = config.get('account','nickname') + ' ' + used + '/' + total
     accountInfo.config(text=accountText)
 
+# 搜索文件事件
+def SearchVideo():
+    SearchFile(Type='video')
+
+def SearchAudio():
+    SearchFile(Type='audio')
+
+def SearchImage():
+    SearchFile(Type='image')
+
+def SearchDoc():
+    SearchFile(Type='doc')
+
+def SearchFile(Keywords='',Type='None'):
+    if Type == 'None' and Keywords == '':
+        dialogs.Messagebox.show_error(message='请输入搜索关键词或路径')
+        return 0
+    elif Type == 'None' and Keywords != '':
+        Search_URL = URL + '/api/v3/file/search/keywords/' + Keywords
+    elif Type == 'video':
+        Search_URL = URL + '/api/v3/file/search/video/internal'
+    elif Type == 'audio':
+        Search_URL = URL + '/api/v3/file/search/audio/internal'
+    elif Type == 'image':
+        Search_URL = URL + '/api/v3/file/search/image/internal'
+    elif Type == 'doc':
+        Search_URL = URL + '/api/v3/file/search/doc/internal'
+    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    session = requests.Session()
+    session.keep_alive = False
+    session.cookies = cookies
+    response = session.get(Search_URL)
+    status_code = response.json()['code']
+    if status_code == 0:
+        fileList.delete(*fileList.get_children())   #清空文件列表
+        fileList.insert("",'0',values=('../', '', '上级目录', ''))
+        AddressBar.delete(0, END)
+        app.title('搜索结果 - ' + Cloud_name)
+        FileList = json.loads(response.text)
+        objects = FileList['data']['objects']
+        objects_list = []
+        objects = FileList.get('data', {}).get('objects', [])
+        for obj in objects:
+            name = obj.get('name', '')
+            size = obj.get('size', '')
+            size = convert_size(size)
+            if size == '0B':
+                size = ''
+            type = obj.get('type', '')
+            if type == 'file':
+                name = "📄 " + name
+            elif type == 'dir':
+                name = "📁 " + name
+            date = obj.get('date', '').replace('T', ' ').split('.')[0]
+            FileID = obj.get('id', '')
+            objects_list.append((name, str(size), type, date,str(FileID)))
+        for itm in objects_list:
+            fileList.insert("",'end',values=itm)
+    else:
+        dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+
 # 从文件预览中返回
 def filePreview_Back():
-    title = AddressBar.get()
+    title = RealAddress
     title = title + " - " + Cloud_name
     app.title(title)
     FilePreview_Frame.pack_forget()
@@ -662,7 +731,7 @@ def OTP_Entry_on_enter_pressed(event):
 
 # 右键刷新事件
 def ReFrush():
-    GetDirList(path=AddressBar.get())
+    GetDirList(path=RealAddress)
     RefrushStorage()
 
 # 新建文件事件
@@ -745,11 +814,6 @@ def AppSettings_Back():
     AppSettings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
-# 为地址栏至少填充一个“/”
-def CheckAddressBarEmpty(event):
-    if AddressBar.get() == '':
-        AddressBar.insert(0, '/')
-
 # 退出APP执行的内容
 def ExitAPP():
     sys.exit()
@@ -761,8 +825,7 @@ def ExitAPP():
 """
 
 app = ttk.Window()
-# 无边框窗口 app.overrideredirect(True)
-app.geometry("623x350")
+app.geometry("623x400")
 app.resizable(0,0) #禁止窗口缩放
 app.attributes('-alpha',0.9)
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
@@ -777,12 +840,7 @@ except:
 
 #登录页布局
 Login_Frame = ttk.Frame(app)
-Login_Frame.pack(anchor=ttk.CENTER)
-
-#底部栏相关
-info_label_text = "App版本：" + App_Version + " 功能补全开发版本 | 2018-2024 于小丘 版权所有。\n继续使用本软件即代表同意本软件与您登录的服务商的用户协议与隐私政策。"
-info_label = ttk.Label(Login_Frame, text=info_label_text,font=(Fonts,10))
-info_label.pack(side=ttk.BOTTOM,fill=ttk.X)
+Login_Frame.pack(anchor=ttk.CENTER,fill=BOTH)
 
 loginFrame = ttk.Frame(Login_Frame)
 loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
@@ -809,28 +867,28 @@ frame_OTP = ttk.Frame(loginFrame)
 frame_button = ttk.Frame(loginFrame)
 frame_button.pack(pady=5)
 
-label_username = ttk.Label(frame_username, text="用户名:",font=(Fonts,12))
+label_username = ttk.LabelFrame(frame_username, text=" 用 户 名 ")
 label_username.pack(side=ttk.LEFT)
 
-entry_username = ttk.Entry(frame_username)
+entry_username = ttk.Entry(label_username,width=30)
 try:
     entry_username.insert(0,localaccount)
 except:
     pass
-entry_username.pack(side=ttk.LEFT,ipadx=30,padx=5)
+entry_username.pack(padx=10,pady=10)
 
-label_password = ttk.Label(frame_password, text="密    码:",font=(Fonts,12))
+label_password = ttk.LabelFrame(frame_password, text=" 密 码 ")
 label_password.pack(side=ttk.LEFT)
 
-entry_password = ttk.Entry(frame_password, show="*")
-entry_password.pack(side=ttk.LEFT,ipadx=30,padx=5)
+entry_password = ttk.Entry(label_password, show="*",width=30)
+entry_password.pack(padx=10,pady=10)
 entry_password.bind('<Return>', Entry_on_enter_pressed)
 
-label_captcha = ttk.Label(frame_captcha, text="验证码:",font=(Fonts,12))
+label_captcha = ttk.LabelFrame(frame_captcha, text="验 证 码")
 label_captcha.pack(side=ttk.LEFT)
 
-entry_captcha = ttk.Entry(frame_captcha)
-entry_captcha.pack(side=ttk.LEFT,ipadx=30,padx=5)
+entry_captcha = ttk.Entry(label_captcha,width=30)
+entry_captcha.pack(padx=10,pady=10)
 entry_captcha.bind('<Return>', Entry_on_enter_pressed)
 
 label_captcha_Pic = ttk.Label(loginFrame)
@@ -872,27 +930,23 @@ fileMenuButton.pack(side=ttk.LEFT)
 
 AddressBar = ttk.Entry(MenuBar)
 AddressBar.insert(0,'/')
-AddressBar.bind('<KeyRelease>',CheckAddressBarEmpty)
 AddressBar.bind('<Return>', ListNewDir)
 AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=120)
 
-accountInfo = ttk.Menubutton(MenuBar, text="读取信息中……",bootstyle=theme['Menu'])
+accountInfo = ttk.Menubutton(MenuBar, text="玩命加载中……",bootstyle=theme['Menu'])
 accountInfo.pack(side=ttk.RIGHT)
 
 FileMenu = ttk.Menu(fileMenuButton,relief='raised')
-FileMenu.add_command(label="📁      全部文件",font=(Fonts,10))  #/api/v3/directory/
-FileMenu.add_command(label="🎞️视频",font=(Fonts,10))      #/api/v3/file/search/video/internal
-FileMenu.add_command(label="🧩       图片",font=(Fonts,10))      #/api/v3/file/search/image/internal
-FileMenu.add_command(label="🎵       音乐",font=(Fonts,10))      #/api/v3/file/search/audio/internal
-FileMenu.add_command(label="📄       文档",font=(Fonts,10))      #/api/v3/file/search/doc/internal
+FileMenu.add_command(label="📁      全部文件",font=(Fonts,10),command=GetDirList)  #/api/v3/directory/
+FileMenu.add_command(label="🎞️视频",font=(Fonts,10),command=SearchVideo)      #/api/v3/file/search/video/internal
+FileMenu.add_command(label="🧩       图片",font=(Fonts,10),command=SearchImage)      #/api/v3/file/search/image/internal
+FileMenu.add_command(label="🎵       音乐",font=(Fonts,10),command=SearchAudio)      #/api/v3/file/search/audio/internal
+FileMenu.add_command(label="📄       文档",font=(Fonts,10),command=SearchDoc)      #/api/v3/file/search/doc/internal
 FileMenu.add_separator()
 FileMenu.add_command(label="🔺 上传文件",font=(Fonts,10))
 FileMenu.add_command(label="🔺 上传文件夹",font=(Fonts,10))
 FileMenu.add_separator()
-FileMenu.add_command(label="我的分享",font=(Fonts,10))
-FileMenu.add_command(label="离线下载",font=(Fonts,10))
 FileMenu.add_command(label='连接',font=(Fonts,10),command=WebDAVPage)
-FileMenu.add_command(label='任务队列',font=(Fonts,10))
 fileMenuButton.config(menu=FileMenu)
 
 UserMenu = ttk.Menu(accountInfo,relief='raised')
