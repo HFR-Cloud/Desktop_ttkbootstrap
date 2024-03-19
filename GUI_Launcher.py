@@ -544,6 +544,8 @@ def GetDirList(path="%2F",WhenStart=False):
             fileList.insert("",'0',values=('../', '', '上级目录', ''))
         AddressBar.delete(0, END)
         AddressBar.insert(0, path2)
+        global DirID
+        DirID = response.json()['data']['parent']
         global RealAddress
         RealAddress = AddressBar.get()
         TitleShow = path2 + ' - ' + Cloud_name
@@ -733,15 +735,75 @@ def ReFrush():
 
 # TODO:新建文件事件
 def MakeFile():
-    print(dialogs.Querybox.get_string(title='新建文件', prompt='请输入文件名称'))
+    FileName = dialogs.Querybox.get_string(title='新建文件', prompt='请输入文件名称(请勿输入None，否则不会被创建)')
+    if FileName != '':
+        MakeDir_URL = URL + '/api/v3/file/create'
+        data = {
+            'path': RealAddress + "/" + FileName
+            }
+        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        response = session.post(MakeDir_URL, json=data)
+        if response.status_code == 200:
+            status_code = response.json()['code']
+            if status_code == 0:
+                GetDirList(path=RealAddress)
+            else:
+                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+    else:
+        dialogs.Messagebox.show_error(message='文件名不能为空')
 
-# TODO:新建文件夹事件
+# 新建文件夹事件
 def MakeDir():
     DirName = dialogs.Querybox.get_string(title='新建文件夹', prompt='请输入文件夹名称(请勿输入None，否则不会被创建)')
-    MakeDir_URL = URL + '/api/v3/directory'
+    if DirName != '':
+        MakeDir_URL = URL + '/api/v3/directory'
+        DirPath = RealAddress + '/' + DirName
+        data = {'path': DirPath}
+        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        response = session.put(MakeDir_URL, json=data)
+        if response.status_code == 200:
+            status_code = response.json()['code']
+            if status_code == 0:
+                GetDirList(path=RealAddress)
+            else:
+                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+    else:
+        dialogs.Messagebox.show_error(message='文件夹名不能为空')
+
+# TODO:删除文件相关
+def DeleteFile():
+    DeleteURL = URL + "/api/v3/object"
+    select_ID = fileList.focus()
+    FileID = fileList.item(select_ID)['values'][4]
     data = {
-        'name': DirName
-    }
+        'item': FileID,
+        'dir':DirID}
+    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    session = requests.Session()
+    session.keep_alive = False
+    session.cookies = cookies
+    response = session.delete(DeleteURL,data=json.dumps(data))
+    if response.status_code == 200:
+            status_code = response.json()['code']
+            if status_code == 0:
+                dialogs.Messagebox.show_info(message='删除成功')
+                GetDirList(path=RealAddress)
+            else:
+                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+    else:
+        dialogs.Messagebox.show_error(message='文件夹名不能为空')
 
 # WebDAV页面
 def WebDAVPage():
@@ -811,6 +873,13 @@ def AppSettings():
     config.close()
     Home_Frame.pack_forget()
     AppSettings_Frame.pack(fill=BOTH, expand=YES)
+
+def AppSettings_Save():
+    config = open('config.ini', 'w', encoding='gb18030')
+    config.write(APPSettingstextbox.get(1.0,END))
+    config.close()
+    dialogs.Messagebox.show_info(message='保存成功')
+    AppSettings_Back()
 
 # App设置返回
 def AppSettings_Back():
@@ -899,10 +968,10 @@ label_captcha_Pic = ttk.Label(loginFrame)
 label_captcha_Pic.pack(pady=5)
 label_captcha_Pic.bind("<Button-1>", RefrushCaptcha)
 
-label_OTP = ttk.Label(frame_OTP, text="验证码:",font=(Fonts,12))
+label_OTP = ttk.Labelframe(frame_OTP, text="验 证 码")
 label_OTP.pack(side=ttk.LEFT)
-entry_OTP = ttk.Entry(frame_OTP)
-entry_OTP.pack(side=ttk.LEFT,ipadx=30,padx=5)
+entry_OTP = ttk.Entry(label_OTP,width=30)
+entry_OTP.pack(padx=10,pady=10)
 entry_OTP.bind('<Return>', OTP_Entry_on_enter_pressed)
 
 button_login = ttk.Button(frame_button, text="登录", command=login)
@@ -1018,7 +1087,7 @@ fileList_Menu_Select_file.add_command(label="重命名",font=(Fonts,10))
 fileList_Menu_Select_file.add_command(label="复制",font=(Fonts,10))
 fileList_Menu_Select_file.add_command(label="移动",font=(Fonts,10))
 fileList_Menu_Select_file.add_separator()
-fileList_Menu_Select_file.add_command(label="删除",font=(Fonts,10))
+fileList_Menu_Select_file.add_command(label="删除",font=(Fonts,10),command=DeleteFile)
 
 # 主页布局结束，文件预览界面开始
 
