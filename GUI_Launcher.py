@@ -3,7 +3,7 @@
 # HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.4"
+App_Version = "0.1.5"
 
 # 填充国际化信息
 zh_CN = {"login":"登录","username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码"}
@@ -36,14 +36,14 @@ cookie_jar = http.cookiejar.CookieJar()
 config = ConfigParser()
 config.read('config.ini')
 
-# 主题配置文件预载（如果配置文件不存在则预载深色模式）
+# 主题配置文件预载（如果配置文件不存在则预载浅色模式）
 try:
     if config['settings']['theme'] == 'light':
         theme = {'Theme':"litera",'Menu':'light'}
     else:
         theme = {'Theme':"superhero",'Menu':'secondary'}
 except:
-    theme = {'Theme':"superhero",'Menu':'secondary'}
+    theme = {'Theme':"litera",'Menu':'light'}
 
 # 语言包预载（如果配置文件不存在则预载中文）
 try:
@@ -121,7 +121,7 @@ def init():
     entry_password.config(state='disabled')
     button_login.config(state='disabled')
     errorCode.set('正在自动登录……')
-    #loginErrorCode.pack()
+    loginErrorCode.pack()
     
     # 自动登录
     try:
@@ -204,8 +204,6 @@ def SuccessLogin(response,WhenStart=False):
     app.title(TitleShow)
     GetDirList()
     RefrushStorage()
-    #message = str(response.json())
-    #dialogs.Messagebox.show_info(message=message)
 
 # 刷新验证码
 def RefrushCaptcha(event):
@@ -416,7 +414,6 @@ def BackToLogin():
 def LogOut():
     # 创建新线程来处理退出登录过程
     fileList.delete(*fileList.get_children())   #清空文件列表
-    fileList.insert("",'0',values=('正在退出登录', '', 'loading', ''))
     ROOTPATH_URL = URL + '/api/v3/user/session'
     cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
     cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
@@ -598,8 +595,8 @@ def Dragged_Files(files):
 # 切换主题
 def SwitchTheme():
     if app.theme == 'superhero':
-        app.set_theme('')
-    elif app.theme == 'darkly':
+        app.set_theme('litera')
+    elif app.theme == 'litera':
         app.set_theme('superhero')
 
 # 上传文件事件
@@ -734,13 +731,17 @@ def ReFrush():
     GetDirList(path=RealAddress)
     RefrushStorage()
 
-# 新建文件事件
+# TODO:新建文件事件
 def MakeFile():
     print(dialogs.Querybox.get_string(title='新建文件', prompt='请输入文件名称'))
 
-# 新建文件夹事件
+# TODO:新建文件夹事件
 def MakeDir():
-    print(dialogs.Querybox.get_string(title='新建文件夹', prompt='请输入文件夹名称'))
+    DirName = dialogs.Querybox.get_string(title='新建文件夹', prompt='请输入文件夹名称(请勿输入None，否则不会被创建)')
+    MakeDir_URL = URL + '/api/v3/directory'
+    data = {
+        'name': DirName
+    }
 
 # WebDAV页面
 def WebDAVPage():
@@ -803,6 +804,7 @@ def Personal_Settings_Back():
     Personal_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
+# APP设置启动
 def AppSettings():
     config = open('config.ini', 'r', encoding='gb18030')
     APPSettingstextbox.insert(1.0,config.readlines())
@@ -810,6 +812,7 @@ def AppSettings():
     Home_Frame.pack_forget()
     AppSettings_Frame.pack(fill=BOTH, expand=YES)
 
+# App设置返回
 def AppSettings_Back():
     AppSettings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
@@ -824,10 +827,10 @@ def ExitAPP():
 ======================================
 """
 
-app = ttk.Window()
-app.geometry("623x400")
+app = ttk.Window(title='HeyCloud Desktop')
+app.geometry("0x0")
 app.resizable(0,0) #禁止窗口缩放
-app.attributes('-alpha',0.9)
+app.attributes('-alpha',0.9) #设置窗口透明
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
 
 app_style = ttk.Style()
@@ -835,6 +838,7 @@ app_style.theme_use(theme['Theme'])
 
 try:
     app.iconbitmap('favicon.ico')
+    app.wm_iconbitmap('favicon.ico')
 except:
     pass
 
@@ -984,8 +988,8 @@ fileList_Menu_No_Select.add_command(label="上传文件",font=(Fonts,10),command
 fileList_Menu_No_Select.add_command(label="上传目录",font=(Fonts,10))
 fileList_Menu_No_Select.add_command(label="离线下载",font=(Fonts,10))
 fileList_Menu_No_Select.add_separator()
-fileList_Menu_No_Select.add_command(label="创建文件夹",font=(Fonts,10),command=MakeDir)
-fileList_Menu_No_Select.add_command(label="创建文件",font=(Fonts,10),command=MakeFile)
+fileList_Menu_No_Select.add_command(label="📁 创建文件夹",font=(Fonts,10),command=MakeDir)
+fileList_Menu_No_Select.add_command(label="📄 创建文件",font=(Fonts,10),command=MakeFile)
 
 fileList_Menu_Select_dir = ttk.Menu(app)
 fileList_Menu_Select_dir.add_command(label="进入",font=(Fonts,10),command=RightKeyClickOpenDir)
