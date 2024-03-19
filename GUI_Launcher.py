@@ -1113,11 +1113,11 @@ APPSettingstextbox.pack(fill=ttk.BOTH,expand=True)
 AppSettings_Button_Frame = ttk.Frame(AppSettings_Frame)
 AppSettings_Button_Frame.pack(side=ttk.BOTTOM,anchor="se",padx=20,pady=20)
 
-AppSettings_Save_button = ttk.Button(AppSettings_Button_Frame,text="保存 ( 暂不支持 )",state='disabled')
-AppSettings_Save_button.pack(side=ttk.LEFT,padx=10,ipadx=20)
+AppSettings_Save_button = ttk.Button(AppSettings_title,text="保存",state='disabled',command=AppSettings_Save)
+AppSettings_Save_button.pack(side=ttk.RIGHT,padx=10,ipadx=20)
 
-AppSettings_Cancel_button = ttk.Button(AppSettings_Button_Frame,text="取消",bootstyle='outline',command=AppSettings_Back)
-AppSettings_Cancel_button.pack(side=ttk.LEFT,padx=10,ipadx=20)
+AppSettings_Cancel_button = ttk.Button(AppSettings_title,text="取消",bootstyle='outline',command=AppSettings_Back)
+AppSettings_Cancel_button.pack(side=ttk.RIGHT,padx=10,ipadx=20)
 
 # App设置页布局结束,管理面板页布局开始
 Manage_Panel_Frame = ttk.Frame(app)
