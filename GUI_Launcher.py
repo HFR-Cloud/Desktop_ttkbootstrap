@@ -3,7 +3,7 @@
 # HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.5"
+App_Version = "0.1.6"
 
 # 填充国际化信息
 zh_CN = {"login":"登录","username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码"}
@@ -30,6 +30,12 @@ import base64                           #Python         开源许可:Python Soft
 import io                               #Python         开源许可:Python Software Foundation License
 import pyperclip                        #pyperclip      开源许可:MIT
 from configparser import ConfigParser   #Python         开源许可:Python Software Foundation License
+import ctypes                           #Python         开源许可:Python Software Foundation License
+import qrcode                           #qrcode         开源许可:MIT
+
+# 高分屏优化(Alpha测试)
+ctypes.windll.shcore.SetProcessDpiAwareness(1)
+ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
 
 # Cookie与配置文件准备
 cookie_jar = http.cookiejar.CookieJar()
@@ -77,10 +83,8 @@ except:
 
 # 带验证码的登录事件
 def captcha_Login():
-    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
-    cookies_txt = open('cookies.txt', 'r')          
-    cookies_dict = json.loads(cookies_txt.read())   
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  
+    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha' 
+    cookies = ReadCookies()
     session = requests.session()
     session.cookies = cookies
     session.keep_alive = False
@@ -130,6 +134,8 @@ def init():
         entry_username.config(state='normal')
         entry_password.config(state='normal')
         button_login.config(state='normal')
+        ProgressBar.pack_forget()
+        Launch_Frame.pack_forget()
         errorCode.set('自动登录失败，请手动登录')
         Home_Frame.pack_forget()
         if Login_captcha:
@@ -144,22 +150,27 @@ def init():
     if Login_captcha:
         captcha_Login()
 
+# 读取Cookies
+def ReadCookies():
+    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    return cookies
+
 # 注册与忘记密码跳转网页
 def SignUP():
     SignUP_URL = URL + "/signup"
     webbrowser.open(SignUP_URL)
 
-def FogetPassword():
-    Foget_URL = URL + "/foget"
-    webbrowser.open(Foget_URL)
+def forgetPassword():
+    forget_URL = URL + "/forget"
+    webbrowser.open(forget_URL)
 
 # 登录成功后执行
 def SuccessLogin(response,WhenStart=False):
     if WhenStart:
         AutoLoginURL = URL + "/api/v3/site/config"
-        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        cookies = ReadCookies()
         session = requests.Session()
         session.keep_alive = False
         session.cookies = cookies
@@ -196,6 +207,7 @@ def SuccessLogin(response,WhenStart=False):
             print('无法读取某些配置，可能是服务端版本过低')
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
+    Launch_Frame.pack_forget()
     Login_Frame.pack_forget()
     Home_Frame.pack(fill=ttk.BOTH, expand=True)
     app.geometry('800x600')
@@ -207,10 +219,8 @@ def SuccessLogin(response,WhenStart=False):
 
 # 刷新验证码
 def RefrushCaptcha(event):
-    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
-    cookies_txt = open('cookies.txt', 'r')          
-    cookies_dict = json.loads(cookies_txt.read())   
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  
+    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'  
+    cookies = ReadCookies()
     session = requests.session()
     session.cookies = cookies
     session.keep_alive = False
@@ -317,9 +327,7 @@ def login_process():
     }
     LOGIN_URL = URL + '/api/v3/user/session'
     try:
-        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        cookies = ReadCookies()
     except:
         pass
     session = requests.Session()
@@ -415,9 +423,7 @@ def LogOut():
     # 创建新线程来处理退出登录过程
     fileList.delete(*fileList.get_children())   #清空文件列表
     ROOTPATH_URL = URL + '/api/v3/user/session'
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
     session.cookies = cookies
@@ -463,6 +469,12 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s%s" % (s, size_name[i])
 
+# 处理单击取消选中事件
+def LeftKeyOnclick(event):
+    selected_items = fileList.selection()
+    for item in selected_items:
+        fileList.selection_remove(item)
+
 # 处理右键打开文件夹事件
 def RightKeyClickOpenDir():
     filelistonclick(event='')
@@ -492,9 +504,7 @@ def filelistonclick(event):
             elif fileType == 'txt' or fileType == 'md' or fileType == 'json' or fileType == 'php' or fileType == 'py' or fileType == 'bat' or fileType == 'cpp' or fileType == 'c' or fileType == 'h' or fileType == 'java' or fileType == 'js' or fileType == 'html' or fileType == 'css' or fileType == 'xml' or fileType == 'yaml' or fileType == 'yml' or fileType == 'sh' or fileType == 'ini' or fileType == 'conf' or fileType == 'log':
                 FilePreview_title.config(text=choose_name)
                 Preview_Url = URL + "/api/v3/file/content/" + str(selected_item_values[4])
-                cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-                cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-                cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+                cookies = ReadCookies()
                 session = requests.Session()
                 session.keep_alive = False
                 session.cookies = cookies
@@ -528,16 +538,28 @@ def filelistonrightclick(event):
 
 # 请求文件列表并展示相关
 def GetDirList(path="%2F",WhenStart=False):
-    ROOTPATH_URL = URL + '/api/v3/directory' + path
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
-    session = requests.Session()
-    session.keep_alive = False
-    session.cookies = cookies
-    response = session.get(ROOTPATH_URL)
-    status_code = response.json()['code']
-    if status_code == 0:
+    def task():
+        ProgressBar.pack(fill=ttk.X)
+
+        ROOTPATH_URL = URL + '/api/v3/directory' + path
+        cookies = ReadCookies()
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        response = session.get(ROOTPATH_URL)
+        status_code = response.json()['code']
+        if status_code == 0:
+            # 网络请求完成后，安排一个回调函数在主线程中执行
+            app.after(0, update_gui, response)
+        elif status_code == 40016:
+            dialogs.Messagebox.show_error(message='目录不存在')
+        elif status_code == 401:
+            pass
+        else:
+            dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+    
+    # 利用线程防止卡GUI
+    def update_gui(response):
         fileList.delete(*fileList.get_children())   #清空文件列表
         path2 = path.replace('%2F','/')
         if path2 != '/':
@@ -573,12 +595,10 @@ def GetDirList(path="%2F",WhenStart=False):
         if WhenStart:
             Login_Frame.pack_forget()
             Home_Frame.pack()
-    elif status_code == 40016:
-        dialogs.Messagebox.show_error(message='目录不存在')
-    elif status_code == 401:
-        pass
-    else:
-        dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+        
+        ProgressBar.pack_forget()
+
+    threading.Thread(target=task).start()
 
 # 处理地址栏更改后刷新文件列表事件
 def ListNewDir(event):
@@ -618,9 +638,7 @@ def DownloadFile():
     selected_item_values = fileList.item(select_ID)['values']
     fileID = selected_item_values[4]
     Download_Require = URL + '/api/v3/file/download/' + fileID
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
     session.cookies = cookies
@@ -635,9 +653,7 @@ def DownloadFile():
 # 刷新用户容量函数
 def RefrushStorage():
     Require_URL = URL + '/api/v3/user/storage'
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
     session.cookies = cookies
@@ -675,9 +691,7 @@ def SearchFile(Keywords='',Type='None'):
         Search_URL = URL + '/api/v3/file/search/image/internal'
     elif Type == 'doc':
         Search_URL = URL + '/api/v3/file/search/doc/internal'
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+    cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
     session.cookies = cookies
@@ -733,17 +747,15 @@ def ReFrush():
     GetDirList(path=RealAddress)
     RefrushStorage()
 
-# TODO:新建文件事件
+# 新建文件事件
 def MakeFile():
-    FileName = dialogs.Querybox.get_string(title='新建文件', prompt='请输入文件名称(请勿输入None，否则不会被创建)')
+    FileName = dialogs.Querybox.get_string(title='新建文件', prompt='请输入文件名称')
     if FileName != '':
         MakeDir_URL = URL + '/api/v3/file/create'
         data = {
             'path': RealAddress + "/" + FileName
             }
-        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        cookies = ReadCookies()
         session = requests.Session()
         session.keep_alive = False
         session.cookies = cookies
@@ -759,14 +771,12 @@ def MakeFile():
 
 # 新建文件夹事件
 def MakeDir():
-    DirName = dialogs.Querybox.get_string(title='新建文件夹', prompt='请输入文件夹名称(请勿输入None，否则不会被创建)')
+    DirName = dialogs.Querybox.get_string(title='新建文件夹', prompt='请输入文件夹名称')
     if DirName != '':
         MakeDir_URL = URL + '/api/v3/directory'
         DirPath = RealAddress + '/' + DirName
         data = {'path': DirPath}
-        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        cookies = ReadCookies()
         session = requests.Session()
         session.keep_alive = False
         session.cookies = cookies
@@ -786,11 +796,8 @@ def DeleteFile():
     select_ID = fileList.focus()
     FileID = fileList.item(select_ID)['values'][4]
     data = {
-        'item': FileID,
-        'dir':DirID}
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        'item': FileID}
+    cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
     session.cookies = cookies
@@ -807,18 +814,24 @@ def DeleteFile():
 
 # WebDAV页面
 def WebDAVPage():
-    Home_Frame.pack_forget()
-    WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
-    WebDAV_URL = URL + '/api/v3/webdav/accounts'
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
-    session = requests.Session()
-    session.keep_alive = False
-    session.cookies = cookies
-    response = session.get(WebDAV_URL)
-    status_code = response.json()['code']
-    if status_code == 0:
+    def task():
+        ProgressBar.pack(fill=ttk.X)
+
+        app.title("连接 - " + Cloud_name)
+        Home_Frame.pack_forget()
+        WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
+        WebDAV_URL = URL + '/api/v3/webdav/accounts'
+        cookies = ReadCookies()
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        response = session.get(WebDAV_URL)
+        status_code = response.json()['code']
+        if status_code == 0:
+            # 网络请求完成后，安排一个回调函数在主线程中执行
+            app.after(0, update_gui, response)
+
+    def update_gui(response):
         WebDAV_List.delete(*WebDAV_List.get_children())
         WebDAVList = json.loads(response.text)
         objects = WebDAVList['data']['accounts']
@@ -832,6 +845,10 @@ def WebDAVPage():
             objects_List.append([Name, Password, Root, CreatedAt])
         for itm in objects_List:
             WebDAV_List.insert('', 'end', values=itm)
+        
+        ProgressBar.pack_forget()
+
+    threading.Thread(target=task).start()
 
 # 处理WebDAV右键按下的事件
 def WebDAV_List_Click(event):
@@ -851,8 +868,13 @@ def CopyWebDAVPassword():
     except:
         dialogs.Messagebox.show_error(message='未选择任何项目')
 
+# 处理连接iOS客户端事件
+def MobileConnect():
+    print('TODO:连接iOS客户端')
+
 # 从WebDAV返回到文件列表页
 def WebDAVPage_Back():
+    app.title(RealAddress + " - " + Cloud_name)
     WebDAV_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
@@ -897,10 +919,12 @@ def ExitAPP():
 """
 
 app = ttk.Window(title='HeyCloud Desktop')
-app.geometry("0x0")
+app.geometry("300x200")
+app.place_window_center()
 app.resizable(0,0) #禁止窗口缩放
 app.attributes('-alpha',0.9) #设置窗口透明
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
+app.tk.call('tk', 'scaling', ScaleFactor/75)
 
 app_style = ttk.Style()
 app_style.theme_use(theme['Theme'])
@@ -911,9 +935,18 @@ try:
 except:
     pass
 
+ProgressBar = ttk.Progressbar(app, mode='indeterminate')
+ProgressBar.start(25)
+
+Launch_Frame = ttk.Frame(app)
+Launch_Frame.pack(fill=BOTH, expand=YES)
+
+Launching_Label = ttk.Label(Launch_Frame, text='正在启动……',font=(Fonts,16))
+Launching_Label.place(relx=0.5, rely=0.5, anchor=ttk.CENTER)
+
 #登录页布局
 Login_Frame = ttk.Frame(app)
-Login_Frame.pack(anchor=ttk.CENTER,fill=BOTH)
+# Login_Frame.pack(anchor=ttk.CENTER,fill=BOTH)
 
 loginFrame = ttk.Frame(Login_Frame)
 loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
@@ -982,7 +1015,7 @@ button_register = ttk.Button(frame_button, text="注册",bootstyle="outline",com
 button_register.pack(side=ttk.LEFT,ipadx=20,padx=5)
 
 #忘记密码相关
-button_forget = ttk.Button(frame_button, text="忘记密码",bootstyle="link",command=FogetPassword)
+button_forget = ttk.Button(frame_button, text="忘记密码",bootstyle="link",command=forgetPassword)
 button_forget.pack(side=ttk.LEFT,padx=10)
 
 #两步验证返回按钮
@@ -1006,7 +1039,7 @@ AddressBar.insert(0,'/')
 AddressBar.bind('<Return>', ListNewDir)
 AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=120)
 
-accountInfo = ttk.Menubutton(MenuBar, text="玩命加载中……",bootstyle=theme['Menu'])
+accountInfo = ttk.Menubutton(MenuBar, text="信息加载中……",bootstyle=theme['Menu'])
 accountInfo.pack(side=ttk.RIGHT)
 
 FileMenu = ttk.Menu(fileMenuButton,relief='raised')
@@ -1045,6 +1078,7 @@ filelistStyle = ttk.Style()
 filelistStyle.configure("Treeview",font=(Fonts,12))
 filelistStyle.configure("Treeview",rowheight=35)
 fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
+fileList.bind("<Button-1>",LeftKeyOnclick)
 fileList.bind("<Double-Button-1>",filelistonclick)
 fileList.bind("<Button-3>",filelistonrightclick)
 windnd.hook_dropfiles(fileList, func=Dragged_Files)
@@ -1087,7 +1121,7 @@ fileList_Menu_Select_file.add_command(label="重命名",font=(Fonts,10))
 fileList_Menu_Select_file.add_command(label="复制",font=(Fonts,10))
 fileList_Menu_Select_file.add_command(label="移动",font=(Fonts,10))
 fileList_Menu_Select_file.add_separator()
-fileList_Menu_Select_file.add_command(label="删除",font=(Fonts,10),command=DeleteFile)
+fileList_Menu_Select_file.add_command(label="删除 (暂不可用，显示删除成功也无效)",font=(Fonts,10),command=DeleteFile)
 
 # 主页布局结束，文件预览界面开始
 
@@ -1115,7 +1149,7 @@ WebDAV_Settings_Frame = ttk.Frame(app)
 WebDAV_Title_Frame = ttk.Frame(WebDAV_Settings_Frame)
 WebDAV_Title_Frame.pack(anchor='n',fill=ttk.X)
 
-WebDAV_title = ttk.Label(WebDAV_Title_Frame,text="WebDAV配置",font=(Fonts, 18))
+WebDAV_title = ttk.Label(WebDAV_Title_Frame,text="连接",font=(Fonts, 18))
 WebDAV_title.pack(side=ttk.LEFT,padx=20,pady=20)
 
 WebDAV_Cancel_button = ttk.Button(WebDAV_Title_Frame,text="取消",bootstyle='outline',command=WebDAVPage_Back)
@@ -1126,6 +1160,9 @@ WebDAV_Save_button.pack(side=ttk.RIGHT,padx=10,ipadx=20)
 
 WebDAV_Add_button = ttk.Button(WebDAV_Title_Frame,text="添加 ( 暂不支持 )",state='disabled')
 WebDAV_Add_button.pack(side=ttk.RIGHT,padx=20,ipadx=20)
+
+MobileConnect = ttk.Button(WebDAV_Title_Frame,text="iOS 客户端",command=MobileConnect)
+MobileConnect.pack(side=ttk.RIGHT,padx=20,ipadx=20)
 
 WebDAV_List = ttk.Treeview(WebDAV_Settings_Frame,columns=["备注名","密码","相对根目录","创建日期"],show=HEADINGS)
 WebDAV_List.column('备注名',width=150)
@@ -1140,6 +1177,16 @@ WebDAV_Menu.add_command(label="复制密码",command=CopyWebDAVPassword)
 WebDAV_Menu.add_command(label="开启 / 关闭只读")
 WebDAV_Menu.add_command(label="开启 / 关闭反代")
 WebDAV_Menu.add_command(label="删除")
+
+# iOS客户端连接页面
+
+ConnectMobileFrame = ttk.Frame(app)
+
+ConnectMobile_title = ttk.Label(ConnectMobileFrame,text="iOS 客户端",font=(Fonts, 18))
+ConnectMobile_title.pack(side=ttk.LEFT,padx=20,pady=20)
+
+ConnectMobile_Label = ttk.Label(ConnectMobileFrame,text="请在App Store下载“Cloudreve”应用程序，然后打开应用，并扫面以下二维码：",font=(Fonts, 12))
+ConnectMobile_Label.pack(anchor="nw",padx=40)
 
 # WebDAV配置页布局结束，个人设置页布局开始
 
