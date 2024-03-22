@@ -3,7 +3,7 @@
 # HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.6"
+App_Version = "0.1.7"
 
 # 填充国际化信息
 zh_CN = {"login":"登录","username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码"}
@@ -45,9 +45,9 @@ config.read('config.ini')
 # 主题配置文件预载（如果配置文件不存在则预载浅色模式）
 try:
     if config['settings']['theme'] == 'light':
-        theme = {'Theme':"litera",'Menu':'light'}
+        theme = {'Theme':"cosmo",'Menu':'light'}
     else:
-        theme = {'Theme':"superhero",'Menu':'secondary'}
+        theme = {'Theme':"darkly",'Menu':'secondary'}
 except:
     theme = {'Theme':"litera",'Menu':'light'}
 
@@ -474,6 +474,9 @@ def LeftKeyOnclick(event):
     selected_items = fileList.selection()
     for item in selected_items:
         fileList.selection_remove(item)
+
+def RightKeyClickOpenFile():
+    filelistonclick(event='')
 
 # 处理右键打开文件夹事件
 def RightKeyClickOpenDir():
@@ -908,6 +911,10 @@ def AppSettings_Back():
     AppSettings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
+def BuyPro():
+    Home_Frame.pack_forget()
+    APP_VIP_Frame.pack(fill=BOTH,expand=YES)
+
 # 退出APP执行的内容
 def ExitAPP():
     sys.exit()
@@ -986,7 +993,7 @@ entry_username.pack(padx=10,pady=10)
 label_password = ttk.LabelFrame(frame_password, text=" 密 码 ")
 label_password.pack(side=ttk.LEFT)
 
-entry_password = ttk.Entry(label_password, show="*",width=30)
+entry_password = ttk.Entry(label_password, show="•",width=30)
 entry_password.pack(padx=10,pady=10)
 entry_password.bind('<Return>', Entry_on_enter_pressed)
 
@@ -1060,6 +1067,8 @@ UserMenu.add_command(label="个人设置",font=(Fonts,10),command=Personal_Setti
 UserMenu.add_command(label="APP设置",font=(Fonts,10),command=AppSettings)
 UserMenu.add_command(label="管理面板",font=(Fonts,10))
 UserMenu.add_command(label="退出登录",font=(Fonts,10),command=LogOut)
+UserMenu.add_separator()
+UserMenu.add_command(label="购买 HeyCloud Desktop Pro",font=(Fonts,10),command=BuyPro)
 accountInfo.config(menu=UserMenu)
 
 fileListFrame = ttk.Frame(Home_Frame)
@@ -1110,7 +1119,7 @@ fileList_Menu_Select_dir.add_separator()
 fileList_Menu_Select_dir.add_command(label="删除",font=(Fonts,10))
 
 fileList_Menu_Select_file = ttk.Menu(app)
-fileList_Menu_Select_file.add_command(label="打开",font=(Fonts,10),command=filelistonclick)
+fileList_Menu_Select_file.add_command(label="打开",font=(Fonts,10),command=RightKeyClickOpenFile)
 fileList_Menu_Select_file.add_command(label="下载",font=(Fonts,10),command=DownloadFile)
 fileList_Menu_Select_file.add_separator()
 fileList_Menu_Select_file.add_command(label="压缩",font=(Fonts,10))
@@ -1240,6 +1249,16 @@ Manage_Panel_Frame = ttk.Frame(app)
 
 Manage_Panel_title = ttk.Label(Manage_Panel_Frame,text="管理面板(待开发)",font=(Fonts, 18))
 Manage_Panel_title.pack(anchor="nw",padx=20,pady=20)
+
+# 管理面板页布局结束，APP会员购买页开始
+
+APP_VIP_Frame = ttk.Frame(app)
+
+APP_VIP_title = ttk.Label(APP_VIP_Frame,text="购买 HeyCloud Desktop Pro",font=(Fonts, 18))
+APP_VIP_title.pack(anchor="nw",padx=20,pady=20)
+
+APP_VIP_info = ttk.Label(APP_VIP_Frame,text="什么是HeyCloud Desktop Pro？你可以选择支持我们的开发，作为回报获得HeyCloud Desktop的\n加强版本，即HeyCloud Desktop Pro。捐助后，你将获得以下内容：\n\n- 文件上传与下载\n- 文件预览\n- 文件同步\n- 未来的更多功能……\n\n截至2024年3月21日，捐助版的价格为个人用户3元/月，30元/年；站点授权为98元/永久。\n如果你是个人用户，请前往https://buy.xiaoqiu.in/s?item=HeyCloudDesktoppro&code=1Qy9Uz97Ynj810kTylc8D\n(点击链接可直接前往网站进行捐助)\n购买完成后请重启本程序，程序会自动获取授权信息\n\n如果你是站长，使用的是HeyCloud，可直接前往HeyCloud后台进行购买；\n若是Cloudreve，请您先证明您拥有Cloudreve Pro的信息给buypro@xiaoqiu.in，后续对接将由邮箱\n联系进行。",font=(Fonts, 12))
+APP_VIP_info.pack(anchor="nw",padx=40)
 
 # APP布局结束
 
