@@ -8,6 +8,7 @@
 - 文件夹浏览
 - 文件搜索
 - 新建文件 / 文件夹
+- 删除文件 / 文件夹
 - 文件分类浏览
 - 文件预览 / 下载
 - WebDAV列表
@@ -35,7 +36,8 @@ allowarchivedownload = True         ;是否允许打包下载
 advancedelete = True                ;是否允许高级删除
 allowwebdavproxy = False            ;是否允许webdav代理
 
-
+[settings]
+theme = light                       ;程序主题，可自行填写light或者dark
 ```
 
 如果是本地调试，则无需新建`config.ini`，程序会自动为url填充http://localhost:5212

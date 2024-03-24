@@ -3,10 +3,10 @@
 # HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.7"
+App_Version = "0.1.8"
 
 # 填充国际化信息
-zh_CN = {"login":"登录","username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码"}
+zh_CN = {'launching':'启动中……','login_title':'登录 ',"username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码","login":"登录"}
 zh_TW = {"login":"登錄","username":"用戶名：","password":"密    碼：","captcha":"驗證碼：","OTP":"OTP驗證碼"}
 en_US = {"login":"Login","username":"Username","password":"Password","captcha":"Captcha","OTP":"OTP Code"}
 
@@ -576,6 +576,8 @@ def GetDirList(path="%2F",WhenStart=False):
         TitleShow = path2 + ' - ' + Cloud_name
         app.title(TitleShow)
         FileList = json.loads(response.text)
+        global Policy_ID
+        Policy_ID = FileList['data']['policy']['id']
         objects = FileList['data']['objects']
         objects_list = []
         objects = FileList.get('data', {}).get('objects', [])
@@ -616,24 +618,6 @@ def Dragged_Files(files):
     msg = '\n'.join((item.decode('utf-8') for item in files))
     msg = '您拖放的文件：\n' + msg
     dialogs.Messagebox.show_info(message=msg)
-
-# 切换主题
-def SwitchTheme():
-    if app.theme == 'superhero':
-        app.set_theme('litera')
-    elif app.theme == 'litera':
-        app.set_theme('superhero')
-
-# 上传文件事件
-def UploadFile():
-    filename = filedialog.askopenfilename()
-    if filename != "":
-        UploadApp = ttk.Window(title='上传文件',themename=theme['Theme'])
-        UploadApp.geometry('400x200')
-        UploadApp.resizable(0,0)
-
-        fileNameFrame = ttk.Frame(UploadApp)
-        filePath = ttk.Label(fileNameFrame, text=filename)
 
 # 下载文件事件
 def DownloadFile():
@@ -793,27 +777,59 @@ def MakeDir():
     else:
         dialogs.Messagebox.show_error(message='文件夹名不能为空')
 
-# TODO:删除文件相关
+# 删除文件相关
 def DeleteFile():
     DeleteURL = URL + "/api/v3/object"
     select_ID = fileList.focus()
-    FileID = fileList.item(select_ID)['values'][4]
-    data = {
-        'item': FileID}
-    cookies = ReadCookies()
-    session = requests.Session()
-    session.keep_alive = False
-    session.cookies = cookies
-    response = session.delete(DeleteURL,data=json.dumps(data))
-    if response.status_code == 200:
-            status_code = response.json()['code']
-            if status_code == 0:
-                dialogs.Messagebox.show_info(message='删除成功')
-                GetDirList(path=RealAddress)
-            else:
-                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
-    else:
-        dialogs.Messagebox.show_error(message='文件夹名不能为空')
+    PreDeleteFileID = fileList.item(select_ID)['values'][4]
+    PreDeleteFileName = fileList.item(select_ID)['values'][0].replace('📄 ','')
+    message = '您确定要删除 ' + PreDeleteFileName + ' 吗？'
+    RealDelete = dialogs.Messagebox.yesno(message=message, title='删除对象')
+    if RealDelete == '确认' or RealDelete == 'Yes':
+        data = {
+            'items': [PreDeleteFileID]}
+        cookies = ReadCookies()
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        response = session.delete(DeleteURL,data=json.dumps(data))
+        if response.status_code == 200:
+                status_code = response.json()['code']
+                if status_code == 0:
+                    dialogs.Messagebox.show_info(message='删除成功')
+                else:
+                    print(response.text)
+                    dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+        else:
+            dialogs.Messagebox.show_error(message='文件夹名不能为空')
+        GetDirList(path=RealAddress)
+
+# 删除文件夹相关
+def DeleteDir():
+    DeleteURL = URL + "/api/v3/object"
+    select_ID = fileList.focus()
+    PreDeleteDirID = fileList.item(select_ID)['values'][4]
+    PreDeleteDirName = fileList.item(select_ID)['values'][0].replace('📁 ','')
+    message = '您确定要删除 ' + PreDeleteDirName + ' 吗？'
+    RealDelete = dialogs.Messagebox.yesno(message=message, title='删除对象')
+    if RealDelete == '确认' or RealDelete == 'Yes':
+        data = {
+            'dirs': [PreDeleteDirID]}
+        cookies = ReadCookies()
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        response = session.delete(DeleteURL,data=json.dumps(data))
+        if response.status_code == 200:
+                status_code = response.json()['code']
+                if status_code == 0:
+                    dialogs.Messagebox.show_info(message='删除成功')
+                else:
+                    print(response.text)
+                    dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+        else:
+            dialogs.Messagebox.show_error(message='文件夹名不能为空')
+        GetDirList(path=RealAddress)
 
 # WebDAV页面
 def WebDAVPage():
@@ -915,6 +931,10 @@ def BuyPro():
     Home_Frame.pack_forget()
     APP_VIP_Frame.pack(fill=BOTH,expand=YES)
 
+# 程序获得焦点时读取剪切板，并查询是否为目标服务器的分享链接，如果是则提醒用户是否访问
+def ScanShareURL():
+    print(pyperclip.get_clipboard())
+
 # 退出APP执行的内容
 def ExitAPP():
     sys.exit()
@@ -928,8 +948,8 @@ def ExitAPP():
 app = ttk.Window(title='HeyCloud Desktop')
 app.geometry("300x200")
 app.place_window_center()
-app.resizable(0,0) #禁止窗口缩放
-app.attributes('-alpha',0.9) #设置窗口透明
+app.attributes('-alpha',0.9) #设置窗口半透明
+app.protocol("WM_TAKE_FOCUS", ScanShareURL)
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
 app.tk.call('tk', 'scaling', ScaleFactor/75)
 
@@ -948,7 +968,7 @@ ProgressBar.start(25)
 Launch_Frame = ttk.Frame(app)
 Launch_Frame.pack(fill=BOTH, expand=YES)
 
-Launching_Label = ttk.Label(Launch_Frame, text='正在启动……',font=(Fonts,16))
+Launching_Label = ttk.Label(Launch_Frame, text=locales['launching'],font=(Fonts,16))
 Launching_Label.place(relx=0.5, rely=0.5, anchor=ttk.CENTER)
 
 #登录页布局
@@ -1056,9 +1076,6 @@ FileMenu.add_command(label="🧩       图片",font=(Fonts,10),command=SearchIma
 FileMenu.add_command(label="🎵       音乐",font=(Fonts,10),command=SearchAudio)      #/api/v3/file/search/audio/internal
 FileMenu.add_command(label="📄       文档",font=(Fonts,10),command=SearchDoc)      #/api/v3/file/search/doc/internal
 FileMenu.add_separator()
-FileMenu.add_command(label="🔺 上传文件",font=(Fonts,10))
-FileMenu.add_command(label="🔺 上传文件夹",font=(Fonts,10))
-FileMenu.add_separator()
 FileMenu.add_command(label='连接',font=(Fonts,10),command=WebDAVPage)
 fileMenuButton.config(menu=FileMenu)
 
@@ -1068,7 +1085,8 @@ UserMenu.add_command(label="APP设置",font=(Fonts,10),command=AppSettings)
 UserMenu.add_command(label="管理面板",font=(Fonts,10))
 UserMenu.add_command(label="退出登录",font=(Fonts,10),command=LogOut)
 UserMenu.add_separator()
-UserMenu.add_command(label="购买 HeyCloud Desktop Pro",font=(Fonts,10),command=BuyPro)
+UserMenu.add_command(label="购买 HeyCloud Desktop Pro",font=(Fonts,12),command=BuyPro)
+UserMenu.add_command(label="关于 HeyCloud Desktop",font=(Fonts,10))
 accountInfo.config(menu=UserMenu)
 
 fileListFrame = ttk.Frame(Home_Frame)
@@ -1077,12 +1095,17 @@ fileListFrame.pack(side=ttk.BOTTOM,fill=ttk.BOTH,expand=True)
 scrollbar = ttk.Scrollbar(fileListFrame, orient=VERTICAL, bootstyle="round")
 scrollbar.pack(side='right', fill='y')
 fileList = ttk.Treeview(fileListFrame,columns=["名称","大小","类型","修改日期",'id'],show="headings",yscrollcommand=scrollbar.set)
-fileList.column("名称",width=200)
+fileList.column("名称",width=200,)
 fileList.column("大小",width=50)
-fileList.column("类型",width=0,stretch=False)
+fileList.column("类型",width=0,stretch=False, anchor="center")
 fileList.heading('类型')
+fileList.column("修改日期", anchor="center")
 fileList.column("id",width=0,stretch=False)
-fileList.heading('id')
+fileList.heading("名称", text="名称")
+fileList.heading("大小", text="大小")
+fileList.heading("类型", text="类型")
+fileList.heading("修改日期", text="修改日期")
+fileList.heading("id", text="id")
 filelistStyle = ttk.Style()
 filelistStyle.configure("Treeview",font=(Fonts,12))
 filelistStyle.configure("Treeview",rowheight=35)
@@ -1096,8 +1119,6 @@ scrollbar.config(command=fileList.yview)
 fileList_Menu_No_Select = ttk.Menu(app)
 fileList_Menu_No_Select.add_command(label="刷新",font=(Fonts,10),command=ReFrush)
 fileList_Menu_No_Select.add_separator()
-fileList_Menu_No_Select.add_command(label="上传文件",font=(Fonts,10),command=UploadFile)
-fileList_Menu_No_Select.add_command(label="上传目录",font=(Fonts,10))
 fileList_Menu_No_Select.add_command(label="离线下载",font=(Fonts,10))
 fileList_Menu_No_Select.add_separator()
 fileList_Menu_No_Select.add_command(label="📁 创建文件夹",font=(Fonts,10),command=MakeDir)
@@ -1116,7 +1137,7 @@ fileList_Menu_Select_dir.add_command(label="重命名",font=(Fonts,10))
 fileList_Menu_Select_dir.add_command(label="复制",font=(Fonts,10))
 fileList_Menu_Select_dir.add_command(label="移动",font=(Fonts,10))
 fileList_Menu_Select_dir.add_separator()
-fileList_Menu_Select_dir.add_command(label="删除",font=(Fonts,10))
+fileList_Menu_Select_dir.add_command(label="删除",font=(Fonts,10),command=DeleteDir)
 
 fileList_Menu_Select_file = ttk.Menu(app)
 fileList_Menu_Select_file.add_command(label="打开",font=(Fonts,10),command=RightKeyClickOpenFile)
@@ -1130,7 +1151,7 @@ fileList_Menu_Select_file.add_command(label="重命名",font=(Fonts,10))
 fileList_Menu_Select_file.add_command(label="复制",font=(Fonts,10))
 fileList_Menu_Select_file.add_command(label="移动",font=(Fonts,10))
 fileList_Menu_Select_file.add_separator()
-fileList_Menu_Select_file.add_command(label="删除 (暂不可用，显示删除成功也无效)",font=(Fonts,10),command=DeleteFile)
+fileList_Menu_Select_file.add_command(label="删除",font=(Fonts,10),command=DeleteFile)
 
 # 主页布局结束，文件预览界面开始
 
@@ -1178,6 +1199,10 @@ WebDAV_List.column('备注名',width=150)
 WebDAV_List.column('密码',width=350)
 WebDAV_List.column('相对根目录',width=100)
 WebDAV_List.column('创建日期',width=100)
+WebDAV_List.heading("备注名", text="备注名")
+WebDAV_List.heading("密码", text="密码")
+WebDAV_List.heading("相对根目录", text="相对根目录")
+WebDAV_List.heading("创建日期", text="创建日期")
 WebDAV_List.bind("<Button-3>",WebDAV_List_Click)
 WebDAV_List.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
 
@@ -1257,7 +1282,7 @@ APP_VIP_Frame = ttk.Frame(app)
 APP_VIP_title = ttk.Label(APP_VIP_Frame,text="购买 HeyCloud Desktop Pro",font=(Fonts, 18))
 APP_VIP_title.pack(anchor="nw",padx=20,pady=20)
 
-APP_VIP_info = ttk.Label(APP_VIP_Frame,text="什么是HeyCloud Desktop Pro？你可以选择支持我们的开发，作为回报获得HeyCloud Desktop的\n加强版本，即HeyCloud Desktop Pro。捐助后，你将获得以下内容：\n\n- 文件上传与下载\n- 文件预览\n- 文件同步\n- 未来的更多功能……\n\n截至2024年3月21日，捐助版的价格为个人用户3元/月，30元/年；站点授权为98元/永久。\n如果你是个人用户，请前往https://buy.xiaoqiu.in/s?item=HeyCloudDesktoppro&code=1Qy9Uz97Ynj810kTylc8D\n(点击链接可直接前往网站进行捐助)\n购买完成后请重启本程序，程序会自动获取授权信息\n\n如果你是站长，使用的是HeyCloud，可直接前往HeyCloud后台进行购买；\n若是Cloudreve，请您先证明您拥有Cloudreve Pro的信息给buypro@xiaoqiu.in，后续对接将由邮箱\n联系进行。",font=(Fonts, 12))
+APP_VIP_info = ttk.Label(APP_VIP_Frame,text="什么是HeyCloud Desktop Pro？你可以选择支持我们的开发，作为回报获得HeyCloud Desktop的\n加强版本，即HeyCloud Desktop Pro。捐助后，你将获得以下内容：\n\n- 文件上传与下载\n- 文件预览\n- 文件同步\n- 未来的更多功能……\n\n截至2024年3月21日，捐助版的价格为个人用户3元/月，30元/年；站点授权为98元/永久。\n目前HeyCloud Desktop正在处于功能补全开发，因此我们暂时免费提供程序的所有功能，在后续正式\n版后会上架捐助。\n\n感谢你的支持！\n\n在您进入本界面后，HeyCloud Desktop必须重启。请关闭本程序，然后再打开。",font=(Fonts, 12))
 APP_VIP_info.pack(anchor="nw",padx=40)
 
 # APP布局结束
