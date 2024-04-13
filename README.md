@@ -14,12 +14,13 @@
 - WebDAV列表
 
 ## 目前未实现但严重影响体验的功能
+- 文件上传(因为技术原因本人实在无法完成)
 - 无法登录需要谷歌与腾讯验证码的 HeyCloud / Cloudreve
 - 账号与Cookies为明文保存
 
 ## 兼容的 HeyCloud / Cloudreve 版本
 - HeyCloud：V0.0.x
-- Cloudreve：V3.x.x `推荐V3.8.3`
+- Cloudreve：V3.8.x `推荐V3.8.3`
 
 ## 程序配置设置
 需要在程序根目录新建文件`config.ini`。示例内容如下：
@@ -49,7 +50,7 @@ Windows:
 双击GUI_Launcher.py即可启动
 
 Linux:
-使用`chomod +x GUI_Launcher.py`命令后再使用`./GUI_Launcher.py`即可启动。
+使用`python3 GUI_Launcher.py`即可启动
 
 ## 开源许可
 基于以下许可证，本程序闭源。

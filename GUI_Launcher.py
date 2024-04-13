@@ -152,10 +152,13 @@ def init():
 
 # 读取Cookies
 def ReadCookies():
-    cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-    cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-    cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
-    return cookies
+    try:
+        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
+        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
+        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        return cookies
+    except:
+        raise "无法读取Cookies"
 
 # 注册与忘记密码跳转网页
 def SignUP():
@@ -542,6 +545,7 @@ def filelistonrightclick(event):
 # 请求文件列表并展示相关
 def GetDirList(path="%2F",WhenStart=False):
     def task():
+        fileList.pack_forget()
         ProgressBar.pack(fill=ttk.X)
 
         ROOTPATH_URL = URL + '/api/v3/directory' + path
@@ -560,6 +564,7 @@ def GetDirList(path="%2F",WhenStart=False):
             pass
         else:
             dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+        fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
     
     # 利用线程防止卡GUI
     def update_gui(response):
@@ -618,6 +623,18 @@ def Dragged_Files(files):
     msg = '\n'.join((item.decode('utf-8') for item in files))
     msg = '您拖放的文件：\n' + msg
     dialogs.Messagebox.show_info(message=msg)
+
+def UploadFile():
+    file_path = filedialog.askopenfilename()
+    if file_path != '':
+        UploadFile_URL = URL + '/api/v3/file/upload'
+        cookies = ReadCookies()
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        files = {'file': open(file_path, 'rb')}
+        response = session.post(UploadFile_URL, files=files)
+        print(response.text)
 
 # 下载文件事件
 def DownloadFile():
@@ -803,6 +820,7 @@ def DeleteFile():
         else:
             dialogs.Messagebox.show_error(message='文件夹名不能为空')
         GetDirList(path=RealAddress)
+        RefrushStorage()
 
 # 删除文件夹相关
 def DeleteDir():
@@ -830,6 +848,7 @@ def DeleteDir():
         else:
             dialogs.Messagebox.show_error(message='文件夹名不能为空')
         GetDirList(path=RealAddress)
+        RefrushStorage()
 
 # WebDAV页面
 def WebDAVPage():
@@ -869,10 +888,48 @@ def WebDAVPage():
 
     threading.Thread(target=task).start()
 
+'''
+# 创建WebDAV账户事件
+def CreateWebDAVAccount():
+    def CreateWebDAVAccount_Process():
+        WebDAV_Name = WebDAV_Name_Entry.get()
+        WebDAV_Password = WebDAV_Password_Entry.get()
+        WebDAV_Root = WebDAV_Root_Entry.get()
+        if WebDAV_Name == '' or WebDAV_Password == '' or WebDAV_Root == '':
+            dialogs.Messagebox.show_error(message='请填写完整信息')
+        else:
+            CreateWebDAVAccount_URL = URL + '/api/v3/webdav/account'
+            data = {
+                'Name': WebDAV_Name,
+                'Password': WebDAV_Password,
+                'Root': WebDAV_Root
+            }
+            cookies = ReadCookies()
+            session = requests.Session()
+            session.keep_alive = False
+            session.cookies = cookies
+            response = session.post(CreateWebDAVAccount_URL, json=data)
+            if response.status_code == 200:
+                status_code = response.json()['code']
+                if status_code == 0:
+                    dialogs.Messagebox.show_info(message='创建成功')
+                else:
+                    dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+            else:
+                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+            WebDAV_Name_Entry.delete(0, END)
+            WebDAV_Password_Entry.delete(0, END)
+            WebDAV_Root_Entry.delete(0, END)
+            GetDirList(path=RealAddress)
+            RefrushStorage()
+
+    CreateWebDAVAccount_Process()
+'''
+
 # 处理WebDAV右键按下的事件
 def WebDAV_List_Click(event):
     select_ID = WebDAV_List.focus()
-    selected_item_values = fileList.item(select_ID)['values']
+    selected_item_values = WebDAV_List.item(select_ID)['values']
     if selected_item_values != '':
         WebDAV_Menu.post(event.x + app.winfo_rootx(), event.y + app.winfo_rooty())
         app.update()
@@ -927,10 +984,6 @@ def AppSettings_Back():
     AppSettings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
-def BuyPro():
-    Home_Frame.pack_forget()
-    APP_VIP_Frame.pack(fill=BOTH,expand=YES)
-
 # 程序获得焦点时读取剪切板，并查询是否为目标服务器的分享链接，如果是则提醒用户是否访问
 def ScanShareURL():
     print(pyperclip.get_clipboard())
@@ -973,7 +1026,6 @@ Launching_Label.place(relx=0.5, rely=0.5, anchor=ttk.CENTER)
 
 #登录页布局
 Login_Frame = ttk.Frame(app)
-# Login_Frame.pack(anchor=ttk.CENTER,fill=BOTH)
 
 loginFrame = ttk.Frame(Login_Frame)
 loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
@@ -1085,7 +1137,6 @@ UserMenu.add_command(label="APP设置",font=(Fonts,10),command=AppSettings)
 UserMenu.add_command(label="管理面板",font=(Fonts,10))
 UserMenu.add_command(label="退出登录",font=(Fonts,10),command=LogOut)
 UserMenu.add_separator()
-UserMenu.add_command(label="购买 HeyCloud Desktop Pro",font=(Fonts,12),command=BuyPro)
 UserMenu.add_command(label="关于 HeyCloud Desktop",font=(Fonts,10))
 accountInfo.config(menu=UserMenu)
 
@@ -1185,9 +1236,6 @@ WebDAV_title.pack(side=ttk.LEFT,padx=20,pady=20)
 WebDAV_Cancel_button = ttk.Button(WebDAV_Title_Frame,text="取消",bootstyle='outline',command=WebDAVPage_Back)
 WebDAV_Cancel_button.pack(side=ttk.RIGHT,padx=20,ipadx=20)
 
-WebDAV_Save_button = ttk.Button(WebDAV_Title_Frame,text="保存 ( 暂不支持 )",state='disabled')
-WebDAV_Save_button.pack(side=ttk.RIGHT,padx=10,ipadx=20)
-
 WebDAV_Add_button = ttk.Button(WebDAV_Title_Frame,text="添加 ( 暂不支持 )",state='disabled')
 WebDAV_Add_button.pack(side=ttk.RIGHT,padx=20,ipadx=20)
 
@@ -1212,7 +1260,7 @@ WebDAV_Menu.add_command(label="开启 / 关闭只读")
 WebDAV_Menu.add_command(label="开启 / 关闭反代")
 WebDAV_Menu.add_command(label="删除")
 
-# iOS客户端连接页面
+# WebDAV配置页布局结束,iOS客户端连接页面开始
 
 ConnectMobileFrame = ttk.Frame(app)
 
@@ -1222,7 +1270,9 @@ ConnectMobile_title.pack(side=ttk.LEFT,padx=20,pady=20)
 ConnectMobile_Label = ttk.Label(ConnectMobileFrame,text="请在App Store下载“Cloudreve”应用程序，然后打开应用，并扫面以下二维码：",font=(Fonts, 12))
 ConnectMobile_Label.pack(anchor="nw",padx=40)
 
-# WebDAV配置页布局结束，个人设置页布局开始
+# iOS客户端连接页面结束，创建WebDAV账户开始
+
+# 创建WebDAV账户结束，个人设置页布局开始
 
 Personal_Settings_Frame = ttk.Frame(app)
 
@@ -1274,16 +1324,6 @@ Manage_Panel_Frame = ttk.Frame(app)
 
 Manage_Panel_title = ttk.Label(Manage_Panel_Frame,text="管理面板(待开发)",font=(Fonts, 18))
 Manage_Panel_title.pack(anchor="nw",padx=20,pady=20)
-
-# 管理面板页布局结束，APP会员购买页开始
-
-APP_VIP_Frame = ttk.Frame(app)
-
-APP_VIP_title = ttk.Label(APP_VIP_Frame,text="购买 HeyCloud Desktop Pro",font=(Fonts, 18))
-APP_VIP_title.pack(anchor="nw",padx=20,pady=20)
-
-APP_VIP_info = ttk.Label(APP_VIP_Frame,text="什么是HeyCloud Desktop Pro？你可以选择支持我们的开发，作为回报获得HeyCloud Desktop的\n加强版本，即HeyCloud Desktop Pro。捐助后，你将获得以下内容：\n\n- 文件上传与下载\n- 文件预览\n- 文件同步\n- 未来的更多功能……\n\n截至2024年3月21日，捐助版的价格为个人用户3元/月，30元/年；站点授权为98元/永久。\n目前HeyCloud Desktop正在处于功能补全开发，因此我们暂时免费提供程序的所有功能，在后续正式\n版后会上架捐助。\n\n感谢你的支持！\n\n在您进入本界面后，HeyCloud Desktop必须重启。请关闭本程序，然后再打开。",font=(Fonts, 12))
-APP_VIP_info.pack(anchor="nw",padx=40)
 
 # APP布局结束
 

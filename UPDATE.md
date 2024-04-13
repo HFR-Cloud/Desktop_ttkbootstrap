@@ -1,11 +1,12 @@
 # HeyCloud_Desktop 更新日志
 
-## `V0.1.8` build 20240325
-**功能补全版本结束，接下来基本为bug修复，同时专注于HeyCloud服务端的开发**
+## `V0.1.8` build 20240413
 - 新增 文件删除
 - 新增 文件夹删除
 - 优化 顶栏显示问题
 - 优化 窗口允许缩放
+- 修复 WebDAV右键无反应
+- 移除 HeyCloud Desktop 商品页
 
 ## `V0.1.7` build 2024032300
 - 预载 HeyCloud Desktop 商品页
