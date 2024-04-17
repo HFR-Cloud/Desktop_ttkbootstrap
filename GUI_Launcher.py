@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
+# 本程序因开发者个人原因闭源，禁止任何形式的二次开发，禁止任何形式的二次分发
 
 # 填充程序信息
-App_Version = "0.1.8"
+App_Version = "0.1.9"
 
 # 填充国际化信息
 zh_CN = {'launching':'启动中……','login_title':'登录 ',"username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码","login":"登录"}
@@ -32,6 +33,7 @@ import pyperclip                        #pyperclip      开源许可:MIT
 from configparser import ConfigParser   #Python         开源许可:Python Software Foundation License
 import ctypes                           #Python         开源许可:Python Software Foundation License
 import qrcode                           #qrcode         开源许可:MIT
+import easywebdav                       #easywebdav     开源许可:MIT
 
 # 高分屏优化(Alpha测试)
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -624,17 +626,29 @@ def Dragged_Files(files):
     msg = '您拖放的文件：\n' + msg
     dialogs.Messagebox.show_info(message=msg)
 
+# 上传事件
 def UploadFile():
-    file_path = filedialog.askopenfilename()
+    file_path = filedialog.askopenfilenames()
     if file_path != '':
-        UploadFile_URL = URL + '/api/v3/file/upload'
-        cookies = ReadCookies()
-        session = requests.Session()
-        session.keep_alive = False
-        session.cookies = cookies
-        files = {'file': open(file_path, 'rb')}
-        response = session.post(UploadFile_URL, files=files)
-        print(response.text)
+        FileNumber = len(file_path)
+        #循环获取文件路径、大小、名字
+        for i in range(FileNumber):
+            file_path = file_path[i]
+            file_name = os.path.basename(file_path)
+            file_size = os.path.getsize(file_path)
+            file_size = convert_size(file_size)
+            UploadFile_URL_Require = URL + '/api/v3/file/upload'
+            data = {
+                'path': RealAddress,
+                'policy_id': Policy_ID,
+                'size': file_size,
+                'name': file_name
+                }
+            session = requests.Session()
+            session.keep_alive = False
+            session.cookies = ReadCookies()
+            response = session.put(UploadFile_URL_Require, data=json.dumps(data))
+            print(response.text)
 
 # 下载文件事件
 def DownloadFile():
@@ -888,43 +902,48 @@ def WebDAVPage():
 
     threading.Thread(target=task).start()
 
-'''
-# 创建WebDAV账户事件
+# 进入WebDAV账户创建页面
 def CreateWebDAVAccount():
-    def CreateWebDAVAccount_Process():
-        WebDAV_Name = WebDAV_Name_Entry.get()
-        WebDAV_Password = WebDAV_Password_Entry.get()
-        WebDAV_Root = WebDAV_Root_Entry.get()
-        if WebDAV_Name == '' or WebDAV_Password == '' or WebDAV_Root == '':
-            dialogs.Messagebox.show_error(message='请填写完整信息')
-        else:
-            CreateWebDAVAccount_URL = URL + '/api/v3/webdav/account'
-            data = {
-                'Name': WebDAV_Name,
-                'Password': WebDAV_Password,
-                'Root': WebDAV_Root
-            }
-            cookies = ReadCookies()
-            session = requests.Session()
-            session.keep_alive = False
-            session.cookies = cookies
-            response = session.post(CreateWebDAVAccount_URL, json=data)
-            if response.status_code == 200:
-                status_code = response.json()['code']
-                if status_code == 0:
-                    dialogs.Messagebox.show_info(message='创建成功')
-                else:
-                    dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+    WebDAV_Settings_Frame.pack_forget()
+    CreateWebDAVAccount_Frame.pack(fill=BOTH, expand=YES)
+
+# 创建WebDAV账户事件
+def CreateWebDAVAccountOnClick():
+    WebDAV_Name = entry_WebDAV_Name.get()
+    WebDAV_Path = entry_WebDAV_Path.get()
+    if WebDAV_Name == '' or WebDAV_Path == '':
+        dialogs.Messagebox.show_error(message='请填写完整信息')
+    else:
+        CreateWebDAVAccount_URL = URL + '/api/v3/webdav/accounts'
+        data = {
+            'Name': WebDAV_Name,
+            'Path': WebDAV_Path
+        }
+        cookies = ReadCookies()
+        session = requests.Session()
+        session.keep_alive = False
+        session.cookies = cookies
+        response = session.post(CreateWebDAVAccount_URL, json=data)
+        if response.status_code == 200:
+            status_code = response.json()['code']
+            if status_code == 0:
+                dialogs.Messagebox.show_info(message='创建成功，重新进入WebDAV页面即可看到新账户')
+                ExitCreateWebDAVAccount()
             else:
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
-            WebDAV_Name_Entry.delete(0, END)
-            WebDAV_Password_Entry.delete(0, END)
-            WebDAV_Root_Entry.delete(0, END)
-            GetDirList(path=RealAddress)
-            RefrushStorage()
-
-    CreateWebDAVAccount_Process()
-'''
+        else:
+            dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+        entry_WebDAV_Name.delete(0, END)
+        entry_WebDAV_Path.delete(0, END)
+        GetDirList(path=RealAddress)
+        RefrushStorage()
+            
+# 退出WebDAV账户创建页面
+def ExitCreateWebDAVAccount():
+    CreateWebDAVAccount_Frame.pack_forget()
+    WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
+    entry_WebDAV_Name.delete(0, END)
+    entry_WebDAV_Path.delete(0, END)
 
 # 处理WebDAV右键按下的事件
 def WebDAV_List_Click(event):
@@ -1124,9 +1143,11 @@ accountInfo.pack(side=ttk.RIGHT)
 FileMenu = ttk.Menu(fileMenuButton,relief='raised')
 FileMenu.add_command(label="📁      全部文件",font=(Fonts,10),command=GetDirList)  #/api/v3/directory/
 FileMenu.add_command(label="🎞️视频",font=(Fonts,10),command=SearchVideo)      #/api/v3/file/search/video/internal
-FileMenu.add_command(label="🧩       图片",font=(Fonts,10),command=SearchImage)      #/api/v3/file/search/image/internal
-FileMenu.add_command(label="🎵       音乐",font=(Fonts,10),command=SearchAudio)      #/api/v3/file/search/audio/internal
-FileMenu.add_command(label="📄       文档",font=(Fonts,10),command=SearchDoc)      #/api/v3/file/search/doc/internal
+FileMenu.add_command(label="🖼️图片",font=(Fonts,10),command=SearchImage)      #/api/v3/file/search/image/internal
+FileMenu.add_command(label="🎵      音乐",font=(Fonts,10),command=SearchAudio)      #/api/v3/file/search/audio/internal
+FileMenu.add_command(label="📄      文档",font=(Fonts,10),command=SearchDoc)      #/api/v3/file/search/doc/internal
+FileMenu.add_separator()
+FileMenu.add_command(label='上传文件',font=(Fonts,10),command=UploadFile)
 FileMenu.add_separator()
 FileMenu.add_command(label='连接',font=(Fonts,10),command=WebDAVPage)
 fileMenuButton.config(menu=FileMenu)
@@ -1236,7 +1257,7 @@ WebDAV_title.pack(side=ttk.LEFT,padx=20,pady=20)
 WebDAV_Cancel_button = ttk.Button(WebDAV_Title_Frame,text="取消",bootstyle='outline',command=WebDAVPage_Back)
 WebDAV_Cancel_button.pack(side=ttk.RIGHT,padx=20,ipadx=20)
 
-WebDAV_Add_button = ttk.Button(WebDAV_Title_Frame,text="添加 ( 暂不支持 )",state='disabled')
+WebDAV_Add_button = ttk.Button(WebDAV_Title_Frame,text="添加",command=CreateWebDAVAccount)
 WebDAV_Add_button.pack(side=ttk.RIGHT,padx=20,ipadx=20)
 
 MobileConnect = ttk.Button(WebDAV_Title_Frame,text="iOS 客户端",command=MobileConnect)
@@ -1271,6 +1292,38 @@ ConnectMobile_Label = ttk.Label(ConnectMobileFrame,text="请在App Store下载�
 ConnectMobile_Label.pack(anchor="nw",padx=40)
 
 # iOS客户端连接页面结束，创建WebDAV账户开始
+
+CreateWebDAVAccount_Frame = ttk.Frame(app)
+
+CreateWebDAVAccount_title = ttk.Label(CreateWebDAVAccount_Frame,text="创建WebDAV账户",font=(Fonts, 18))
+CreateWebDAVAccount_title.pack(anchor="nw",padx=20,pady=20)
+
+WebDAV_Name_Frame = ttk.Frame(CreateWebDAVAccount_Frame)
+WebDAV_Name_Frame.pack(pady=5)
+
+WebDAV_Path_Frame = ttk.Frame(CreateWebDAVAccount_Frame)
+WebDAV_Path_Frame.pack(pady=5)
+
+WebDAV_Button_Frame = ttk.Frame(CreateWebDAVAccount_Frame)
+WebDAV_Button_Frame.pack(padx=10,pady=10)
+
+label_WebDAV_Name = ttk.LabelFrame(WebDAV_Name_Frame, text=" 备 注 名 ")
+label_WebDAV_Name.pack(side=ttk.LEFT,padx=5)
+
+entry_WebDAV_Name = ttk.Entry(label_WebDAV_Name,width=30)
+entry_WebDAV_Name.pack(padx=10,pady=10)
+
+label_WebDAV_Path = ttk.LabelFrame(WebDAV_Name_Frame, text=" 相 对 根 目 录 ")
+label_WebDAV_Path.pack(side=ttk.LEFT,padx=5)
+
+entry_WebDAV_Path = ttk.Entry(label_WebDAV_Path,width=30)
+entry_WebDAV_Path.pack(padx=10,pady=10)
+
+WebDAV_Save = ttk.Button(WebDAV_Button_Frame,text="确定",command=CreateWebDAVAccountOnClick)
+WebDAV_Save.pack(side=ttk.LEFT,padx=10,pady=10)
+
+WebDAV_Cancel = ttk.Button(WebDAV_Button_Frame,text="取消",bootstyle="outline",command=ExitCreateWebDAVAccount)
+WebDAV_Cancel.pack(side=ttk.LEFT,padx=10,pady=10)
 
 # 创建WebDAV账户结束，个人设置页布局开始
 
