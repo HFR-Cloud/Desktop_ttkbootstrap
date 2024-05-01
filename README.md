@@ -1,7 +1,6 @@
 <p align = "center">
-<br><br>
 <h1><center>HeyCloud Desktop</center></h1>
-原名Cloudreve Desktop，一个基于Tkinter的可跨平台的海枫云存储客户端，兼容Cloudreve V3，并使用ttkbootstrap库进行美化
+原名Cloudreve Desktop，一个基于Tkinter的可跨平台的海枫云存储客户端，兼容Cloudreve V3，并使用ttkBootstrap库进行美化
 <br><br>
 
 ## 目前已经实现的功能
@@ -14,11 +13,10 @@
 - 文件预览 / 下载
 - WebDAV列表
 - 新建WebDAV账户
-- 文件上传 （Alpha测试）
+- 本地策略文件上传
 
 ## 目前存在的Bug
 - 文件列表选中后，将无法再触发未选择时的右键菜单 解决办法：地址栏回车刷新
-- 请勿上传超过分片大小的文件，否则程序会出错 下个版本修复
 
 ## 目前未实现但严重影响体验的功能
 - 无法登录需要谷歌与腾讯验证码的 HeyCloud / Cloudreve
@@ -49,14 +47,13 @@ theme = light                       ;程序主题，可自行填写light或者da
 
 如果是本地调试，则无需新建`config.ini`，程序会自动为url填充http://localhost:5212
 
-## 启动&构建方式
-将完整代码拉取到本地（也可仅拉取`GUI_Launcher.py`，程序会以`Tiny`模式启动 **但非常不建议这样做** ）
+## 食用方式
 
-Windows:
-双击GUI_Launcher.py即可启动
+安装相关依赖：
+> pip install -r requirements.txt
 
-Linux:
-使用`python3 GUI_Launcher.py`即可启动
+启动程序：
+> python GUI_Launcher.py
 
 ## 开源许可 & 杂谈
 本来我并不想开源这个项目的（因为之前我的项目开源之后被别人申请著作权以后返回来告我抄袭，加之这个项目也是自己很久做出来的心血），现在想通了，所以采用**GPL v3**进行开源。但是你也可以赞助我，感谢您的投喂！感谢您的star！

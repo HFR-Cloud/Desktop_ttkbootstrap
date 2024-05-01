@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
-# 本程序因开发者个人原因闭源，未经授权禁止任何形式的二次开发与分发
+# HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.9.2 Dev"
+App_Version = "0.1.9.3 Dev"
 
 # 填充国际化信息
-zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：",
-         "captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
+zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
 zh_TW = {"login": "登錄", "username": "用戶名：", "password": "密    碼：", "captcha": "驗證碼：", "OTP": "OTP驗證碼"}
 en_US = {"login": "Login", "username": "Username", "password": "Password", "captcha": "Captcha", "OTP": "OTP Code"}
 
@@ -17,26 +15,39 @@ HFRCloud_API = {'loginout': '/api/user/session', 'storage': '/api/user/storage',
 Cloudreve_API = {'loginout': '/api/v3/user/session', 'storage': '/api/v3/user/storage', 'dir': '/api/v3/directory'}
 
 # 导入必要库
-import ttkbootstrap as ttk  # ttkbootstrap   开源许可:MIT
-from ttkbootstrap import dialogs  # ttkbootstrap   开源许可:MIT
-from ttkbootstrap.constants import *  # ttkbootstrap   开源许可:MIT
-from tkinter import filedialog  # tkinter        开源许可:Python Software Foundation License
-from PIL import Image, ImageTk  # Pillow         开源许可:Python Imaging Library License
-import os  # Python         开源许可:Python Software Foundation License
-import requests  # requests       开源许可:Apache License 2.0
-import json  # Python         开源许可:Python Software Foundation License
-import math  # Python         开源许可:Python Software Foundation License
-import http.cookiejar  # Python         开源许可:Python Software Foundation License
-import webbrowser  # Python         开源许可:Python Software Foundation License
-import sys  # Python         开源许可:Python Software Foundation License
-import threading  # Python         开源许可:Python Software Foundation License
-import windnd  # windnd         开源许可:MIT
-import pyotp  # pyotp          开源许可:MIT
-import base64  # Python         开源许可:Python Software Foundation License
-import io  # Python         开源许可:Python Software Foundation License
-import pyperclip  # pyperclip      开源许可:MIT
-from configparser import ConfigParser  # Python         开源许可:Python Software Foundation License
-import ctypes  # Python         开源许可:Python Software Foundation License
+import ttkbootstrap as ttk              # ttkbootstrap   开源许可:MIT
+from ttkbootstrap import dialogs        # ttkbootstrap   开源许可:MIT
+from ttkbootstrap.constants import *    # ttkbootstrap   开源许可:MIT
+from tkinter import filedialog          # tkinter        开源许可:Python Software Foundation License
+from PIL import Image, ImageTk          # Pillow         开源许可:Python Imaging Library License
+import os                               # Python         开源许可:Python Software Foundation License
+import requests                         # requests       开源许可:Apache License 2.0
+import json                             # Python         开源许可:Python Software Foundation License
+import math                             # Python         开源许可:Python Software Foundation License
+import http.cookiejar                   # Python         开源许可:Python Software Foundation License
+import webbrowser                       # Python         开源许可:Python Software Foundation License
+import sys                              # Python         开源许可:Python Software Foundation License
+import threading                        # Python         开源许可:Python Software Foundation License
+import windnd                           # windnd         开源许可:MIT
+import pyotp                            # pyotp          开源许可:MIT
+import base64                           # Python         开源许可:Python Software Foundation License
+import io                               # Python         开源许可:Python Software Foundation License
+import pyperclip                        # pyperclip      开源许可:MIT
+from configparser import ConfigParser   # Python         开源许可:Python Software Foundation License
+import ctypes                           # Python         开源许可:Python Software Foundation License
+
+# 资源文件目录访问
+def source_path(relative_path):
+    # 是否Bundle Resource
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# 修改当前工作目录，使得资源文件可以被正确访问
+cd = source_path('')
+os.chdir(cd)
 
 # 高分屏优化(Alpha测试)
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -86,7 +97,6 @@ try:
 except:
     pass
 
-
 # 带验证码的登录事件
 def captcha_Login():
     CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
@@ -105,7 +115,6 @@ def captcha_Login():
         captcha_photo = ImageTk.PhotoImage(image)
         label_captcha_Pic.config(image=captcha_photo)
         label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
-
 
 # 获取云盘信息
 try:
@@ -126,16 +135,15 @@ except:
     dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端')
     sys.exit()
 
-
 # 初始化软件服务
 def init():
+    # 自动登录
     entry_username.config(state='disabled')
     entry_password.config(state='disabled')
     button_login.config(state='disabled')
     errorCode.set('正在自动登录……')
     loginErrorCode.pack()
 
-    # 自动登录
     try:
         SuccessLogin('', True)
     except:
@@ -157,7 +165,10 @@ def init():
     # 刷新验证码
     if Login_captcha:
         captcha_Login()
-
+    
+# 定义上传/下载队列
+Upload_queue = []
+Download_queue = []
 
 # 读取Cookies
 def ReadCookies():
@@ -169,17 +180,14 @@ def ReadCookies():
     except:
         raise "无法读取Cookies"
 
-
 # 注册与忘记密码跳转网页
 def SignUP():
     SignUP_URL = URL + "/signup"
     webbrowser.open(SignUP_URL)
 
-
 def forgetPassword():
     forget_URL = URL + "/forget"
     webbrowser.open(forget_URL)
-
 
 # 登录成功后执行
 def SuccessLogin(response, WhenStart=False):
@@ -234,7 +242,6 @@ def SuccessLogin(response, WhenStart=False):
     GetDirList()
     RefrushStorage()
 
-
 # 刷新验证码
 def RefrushCaptcha(event):
     CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
@@ -259,7 +266,6 @@ def RefrushCaptcha(event):
         cookieWriter = open('cookies.txt', 'w')  # 创建名为cookies.txt的文件，以写入模式写入内容
         cookieWriter.write(cookies_str)
         cookieWriter.close()
-
 
 # OTP登录
 def loginOTP():
@@ -657,14 +663,15 @@ def Dragged_Files(files):
     dialogs.Messagebox.show_info(message=msg)
 
 
-# 上传事件
+# 上传到本地存储事件
 def UploadFile():
-    file_path = filedialog.askopenfilenames()
-    if file_path != '':
-        FileNumber = len(file_path)
+    file_Path = filedialog.askopenfilenames()
+    if file_Path != '':
+        FileNumber = len(file_Path)
+        print('共选择了', FileNumber, '个文件:', file_Path)
         # 循环获取文件路径、大小、名字
         for i in range(FileNumber):
-            file_path = file_path[i]
+            file_path = file_Path[i]
             file_name = os.path.basename(file_path)
             file_size = os.path.getsize(file_path)
             UploadFile_URL_Require = URL + '/api/v3/file/upload'
@@ -678,7 +685,6 @@ def UploadFile():
             session.keep_alive = False
             session.cookies = ReadCookies()
             response = session.put(UploadFile_URL_Require, data=json.dumps(data))
-            print(response.json())
             try:
                 sessionID = response.json()['data']['sessionID']
                 chunk_size = response.json()['data']['chunkSize']
@@ -696,6 +702,8 @@ def UploadFile():
                         else:
                             print('分片',chunk_file,'上传失败，错误：',response.json())
                         chunk_no += 1
+                    print("文件",file_name,'上传成功')
+                print("文件全部上传完成")
             except:
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
 
@@ -717,7 +725,6 @@ def DownloadFile():
         Download_URL = response.json()['data']
     webbrowser.open(Download_URL)
 
-
 # 刷新用户容量函数
 def RefrushStorage():
     Require_URL = URL + '/api/v3/user/storage'
@@ -732,23 +739,18 @@ def RefrushStorage():
     accountText = config.get('account', 'nickname') + ' ' + used + '/' + total
     accountInfo.config(text=accountText)
 
-
 # 搜索文件事件
 def SearchVideo():
     SearchFile(Type='video')
 
-
 def SearchAudio():
     SearchFile(Type='audio')
-
 
 def SearchImage():
     SearchFile(Type='image')
 
-
 def SearchDoc():
     SearchFile(Type='doc')
-
 
 def SearchFile(Keywords='', Type='None'):
     if Type == 'None' and Keywords == '':
@@ -798,7 +800,6 @@ def SearchFile(Keywords='', Type='None'):
     else:
         dialogs.Messagebox.show_error(message='未知错误：' + response.text)
 
-
 # 从文件预览中返回
 def filePreview_Back():
     title = RealAddress
@@ -808,22 +809,18 @@ def filePreview_Back():
     Home_Frame.pack(fill=BOTH, expand=YES)
     TextPreview_textbox.delete(1.0, END)
 
-
 # 处理密码框与验证码框回车即登录事件
 def Entry_on_enter_pressed(event):
     login()
-
 
 # 处理OTP框回车即登录事件
 def OTP_Entry_on_enter_pressed(event):
     loginOTP()
 
-
 # 右键刷新事件
 def ReFrush():
     GetDirList(path=RealAddress)
     RefrushStorage()
-
 
 # 新建文件事件
 def MakeFile():
@@ -847,7 +844,6 @@ def MakeFile():
     else:
         dialogs.Messagebox.show_error(message='文件名不能为空')
 
-
 # 新建文件夹事件
 def MakeDir():
     DirName = dialogs.Querybox.get_string(title='新建文件夹', prompt='请输入文件夹名称')
@@ -868,7 +864,6 @@ def MakeDir():
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
     else:
         dialogs.Messagebox.show_error(message='文件夹名不能为空')
-
 
 # 删除文件相关
 def DeleteFile():
@@ -898,7 +893,6 @@ def DeleteFile():
         GetDirList(path=RealAddress)
         RefrushStorage()
 
-
 # 删除文件夹相关
 def DeleteDir():
     DeleteURL = URL + "/api/v3/object"
@@ -926,7 +920,6 @@ def DeleteDir():
             dialogs.Messagebox.show_error(message='文件夹名不能为空')
         GetDirList(path=RealAddress)
         RefrushStorage()
-
 
 # WebDAV页面
 def WebDAVPage():
@@ -966,12 +959,10 @@ def WebDAVPage():
 
     threading.Thread(target=task).start()
 
-
 # 进入WebDAV账户创建页面
 def CreateWebDAVAccount():
     WebDAV_Settings_Frame.pack_forget()
     CreateWebDAVAccount_Frame.pack(fill=BOTH, expand=YES)
-
 
 # 创建WebDAV账户事件
 def CreateWebDAVAccountOnClick():
@@ -1004,14 +995,12 @@ def CreateWebDAVAccountOnClick():
         GetDirList(path=RealAddress)
         RefrushStorage()
 
-
 # 退出WebDAV账户创建页面
 def ExitCreateWebDAVAccount():
     CreateWebDAVAccount_Frame.pack_forget()
     WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
     entry_WebDAV_Name.delete(0, END)
     entry_WebDAV_Path.delete(0, END)
-
 
 # 处理WebDAV右键按下的事件
 def WebDAV_List_Click(event):
@@ -1020,7 +1009,6 @@ def WebDAV_List_Click(event):
     if selected_item_values != '':
         WebDAV_Menu.post(event.x + app.winfo_rootx(), event.y + app.winfo_rooty())
         app.update()
-
 
 # 处理WebDAV复制密码事件
 def CopyWebDAVPassword():
@@ -1032,11 +1020,9 @@ def CopyWebDAVPassword():
     except:
         dialogs.Messagebox.show_error(message='未选择任何项目')
 
-
 # 处理连接iOS客户端事件
 def MobileConnect():
     print('TODO:连接iOS客户端')
-
 
 # 从WebDAV返回到文件列表页
 def WebDAVPage_Back():
@@ -1044,18 +1030,15 @@ def WebDAVPage_Back():
     WebDAV_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
-
 # 个人设置页面
 def Personal_Settings():
     Home_Frame.pack_forget()
     Personal_Settings_Frame.pack(fill=BOTH, expand=YES)
 
-
 # 从个人设置返回到文件列表页
 def Personal_Settings_Back():
     Personal_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
-
 
 # APP设置启动
 def AppSettings():
@@ -1065,7 +1048,6 @@ def AppSettings():
     Home_Frame.pack_forget()
     AppSettings_Frame.pack(fill=BOTH, expand=YES)
 
-
 def AppSettings_Save():
     config = open('config.ini', 'w', encoding='gb18030')
     config.write(APPSettingstextbox.get(1.0, END))
@@ -1073,22 +1055,18 @@ def AppSettings_Save():
     dialogs.Messagebox.show_info(message='保存成功')
     AppSettings_Back()
 
-
 # App设置返回
 def AppSettings_Back():
     AppSettings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
-
 # 程序获得焦点时读取剪切板，并查询是否为目标服务器的分享链接，如果是则提醒用户是否访问
 def ScanShareURL():
     print(pyperclip.get_clipboard())
 
-
 # 退出APP执行的内容
 def ExitAPP():
     sys.exit()
-
 
 """
 ======================================
@@ -1096,7 +1074,7 @@ def ExitAPP():
 ======================================
 """
 
-app = ttk.Window(title='HeyCloud Desktop')
+app = ttk.Window(title='HFR-Cloud Desktop')
 app.geometry("300x200")
 app.place_window_center()
 app.attributes('-alpha', 0.9)  # 设置窗口半透明
@@ -1227,8 +1205,9 @@ FileMenu.add_command(label="🎵      音乐", font=(Fonts, 10), command=SearchA
 FileMenu.add_command(label="📄      文档", font=(Fonts, 10), command=SearchDoc)  # /api/v3/file/search/doc/internal
 FileMenu.add_separator()
 FileMenu.add_command(label='上传文件', font=(Fonts, 10), command=UploadFile)
+FileMenu.add_command(label='传输队列', font=(Fonts, 10))
 FileMenu.add_separator()
-FileMenu.add_command(label='连接', font=(Fonts, 10), command=WebDAVPage)
+FileMenu.add_command(label='连接与挂载', font=(Fonts, 10), command=WebDAVPage)
 fileMenuButton.config(menu=FileMenu)
 
 UserMenu = ttk.Menu(accountInfo, relief='raised')
@@ -1461,6 +1440,16 @@ Manage_Panel_Frame = ttk.Frame(app)
 
 Manage_Panel_title = ttk.Label(Manage_Panel_Frame, text="管理面板(待开发)", font=(Fonts, 18))
 Manage_Panel_title.pack(anchor="nw", padx=20, pady=20)
+
+# 管理面板页布局结束，APP关于页布局开始
+
+About_Frame = ttk.Frame(app)
+
+About_title = ttk.Label(About_Frame,text="关于 HFR-Cloud Desktop",font=(Fonts, 18))
+About_title.pack(anchor="nw",padx=20,pady=20)
+
+About_info = ttk.Label(About_Frame,text="什么是HFR-Cloud Desktop？这是HFR-Cloud的PC端开源客户端，\n支持连接HFR-Cloud，并兼容Cloudreve v3",font=(Fonts, 12))
+About_info.pack(anchor="nw",padx=40)
 
 # APP布局结束
 
