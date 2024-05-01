@@ -1,39 +1,38 @@
 # -*- coding: utf-8 -*-
 
 # HeyCloud Desktop 作者：于小丘 / Debug：暗之旅者
-# 本程序因开发者个人原因闭源，禁止任何形式的二次开发，禁止任何形式的二次分发
+# 本程序因开发者个人原因闭源，未经授权禁止任何形式的二次开发与分发
 
 # 填充程序信息
 App_Version = "0.1.9"
 
 # 填充国际化信息
-zh_CN = {'launching':'启动中……','login_title':'登录 ',"username":"用户名：","password":"密    码：","captcha":"验证码：","OTP":"OTP验证码","login":"登录"}
-zh_TW = {"login":"登錄","username":"用戶名：","password":"密    碼：","captcha":"驗證碼：","OTP":"OTP驗證碼"}
-en_US = {"login":"Login","username":"Username","password":"Password","captcha":"Captcha","OTP":"OTP Code"}
+zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：",
+         "captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
+zh_TW = {"login": "登錄", "username": "用戶名：", "password": "密    碼：", "captcha": "驗證碼：", "OTP": "OTP驗證碼"}
+en_US = {"login": "Login", "username": "Username", "password": "Password", "captcha": "Captcha", "OTP": "OTP Code"}
 
-#导入必要库
-import ttkbootstrap as ttk              #ttkbootstrap   开源许可:MIT
-from ttkbootstrap import dialogs        #ttkbootstrap   开源许可:MIT
-from ttkbootstrap.constants import *    #ttkbootstrap   开源许可:MIT
-from tkinter import filedialog          #tkinter        开源许可:Python Software Foundation License
-from PIL import Image, ImageTk          #Pillow         开源许可:Python Imaging Library License
-import os                               #Python         开源许可:Python Software Foundation License
-import requests                         #requests       开源许可:Apache License 2.0
-import json                             #Python         开源许可:Python Software Foundation License
-import math                             #Python         开源许可:Python Software Foundation License
-import http.cookiejar                   #Python         开源许可:Python Software Foundation License
-import webbrowser                       #Python         开源许可:Python Software Foundation License
-import sys                              #Python         开源许可:Python Software Foundation License
-import threading                        #Python         开源许可:Python Software Foundation License
-import windnd                           #windnd         开源许可:MIT
-import pyotp                            #pyotp          开源许可:MIT
-import base64                           #Python         开源许可:Python Software Foundation License
-import io                               #Python         开源许可:Python Software Foundation License
-import pyperclip                        #pyperclip      开源许可:MIT
-from configparser import ConfigParser   #Python         开源许可:Python Software Foundation License
-import ctypes                           #Python         开源许可:Python Software Foundation License
-import qrcode                           #qrcode         开源许可:MIT
-import easywebdav                       #easywebdav     开源许可:MIT
+# 导入必要库
+import ttkbootstrap as ttk  # ttkbootstrap   开源许可:MIT
+from ttkbootstrap import dialogs  # ttkbootstrap   开源许可:MIT
+from ttkbootstrap.constants import *  # ttkbootstrap   开源许可:MIT
+from tkinter import filedialog  # tkinter        开源许可:Python Software Foundation License
+from PIL import Image, ImageTk  # Pillow         开源许可:Python Imaging Library License
+import os  # Python         开源许可:Python Software Foundation License
+import requests  # requests       开源许可:Apache License 2.0
+import json  # Python         开源许可:Python Software Foundation License
+import math  # Python         开源许可:Python Software Foundation License
+import http.cookiejar  # Python         开源许可:Python Software Foundation License
+import webbrowser  # Python         开源许可:Python Software Foundation License
+import sys  # Python         开源许可:Python Software Foundation License
+import threading  # Python         开源许可:Python Software Foundation License
+import windnd  # windnd         开源许可:MIT
+import pyotp  # pyotp          开源许可:MIT
+import base64  # Python         开源许可:Python Software Foundation License
+import io  # Python         开源许可:Python Software Foundation License
+import pyperclip  # pyperclip      开源许可:MIT
+from configparser import ConfigParser  # Python         开源许可:Python Software Foundation License
+import ctypes  # Python         开源许可:Python Software Foundation License
 
 # 高分屏优化(Alpha测试)
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -47,11 +46,11 @@ config.read('config.ini')
 # 主题配置文件预载（如果配置文件不存在则预载浅色模式）
 try:
     if config['settings']['theme'] == 'light':
-        theme = {'Theme':"cosmo",'Menu':'light'}
+        theme = {'Theme': "cosmo", 'Menu': 'light'}
     else:
-        theme = {'Theme':"darkly",'Menu':'secondary'}
+        theme = {'Theme': "darkly", 'Menu': 'secondary'}
 except:
-    theme = {'Theme':"litera",'Menu':'light'}
+    theme = {'Theme': "litera", 'Menu': 'light'}
 
 # 语言包预载（如果配置文件不存在则预载中文）
 try:
@@ -78,14 +77,15 @@ except:
 
 # 从本机中读取账号密码，这一功能在后续会添加加密读取
 try:
-    localaccount = config.get('account','username')
-    otp_key = pyotp.TOTP(config.get('account','OTPKey'))
+    localaccount = config.get('account', 'username')
+    otp_key = pyotp.TOTP(config.get('account', 'OTPKey'))
 except:
     pass
 
+
 # 带验证码的登录事件
 def captcha_Login():
-    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha' 
+    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
     cookies = ReadCookies()
     session = requests.session()
     session.cookies = cookies
@@ -101,6 +101,7 @@ def captcha_Login():
         captcha_photo = ImageTk.PhotoImage(image)
         label_captcha_Pic.config(image=captcha_photo)
         label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
+
 
 # 获取云盘信息
 try:
@@ -121,6 +122,7 @@ except:
     dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端')
     sys.exit()
 
+
 # 初始化软件服务
 def init():
     entry_username.config(state='disabled')
@@ -128,10 +130,10 @@ def init():
     button_login.config(state='disabled')
     errorCode.set('正在自动登录……')
     loginErrorCode.pack()
-    
+
     # 自动登录
     try:
-        SuccessLogin('',True)
+        SuccessLogin('', True)
     except:
         entry_username.config(state='normal')
         entry_password.config(state='normal')
@@ -147,32 +149,36 @@ def init():
         app.title(Cloud_name)
         app.place_window_center()
         Login_Frame.pack()
-    
+
     # 刷新验证码
     if Login_captcha:
         captcha_Login()
 
+
 # 读取Cookies
 def ReadCookies():
     try:
-        cookies_txt = open('cookies.txt', 'r')          #以reader读取模式，打开名为cookies.txt的文件
-        cookies_dict = json.loads(cookies_txt.read())   #调用json模块的loads函数，把字符串转成字典
-        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  #把转成字典的cookies再转成cookies本来的格式
+        cookies_txt = open('cookies.txt', 'r')  # 以reader读取模式，打开名为cookies.txt的文件
+        cookies_dict = json.loads(cookies_txt.read())  # 调用json模块的loads函数，把字符串转成字典
+        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  # 把转成字典的cookies再转成cookies本来的格式
         return cookies
     except:
         raise "无法读取Cookies"
+
 
 # 注册与忘记密码跳转网页
 def SignUP():
     SignUP_URL = URL + "/signup"
     webbrowser.open(SignUP_URL)
 
+
 def forgetPassword():
     forget_URL = URL + "/forget"
     webbrowser.open(forget_URL)
 
+
 # 登录成功后执行
-def SuccessLogin(response,WhenStart=False):
+def SuccessLogin(response, WhenStart=False):
     if WhenStart:
         AutoLoginURL = URL + "/api/v3/site/config"
         cookies = ReadCookies()
@@ -181,23 +187,25 @@ def SuccessLogin(response,WhenStart=False):
         session.cookies = cookies
         response = session.get(AutoLoginURL)
     if not WhenStart:
-        cookies_dict = requests.utils.dict_from_cookiejar(response.cookies) #把cookies转化成字典
-        cookies_str = json.dumps(cookies_dict)                              #调用json模块的dumps函数，把cookies从字典再转成字符串。
-        cookieWriter = open('cookies.txt', 'w')             #创建名为cookies.txt的文件，以写入模式写入内容
+        cookies_dict = requests.utils.dict_from_cookiejar(response.cookies)  # 把cookies转化成字典
+        cookies_str = json.dumps(cookies_dict)  # 调用json模块的dumps函数，把cookies从字典再转成字符串。
+        cookieWriter = open('cookies.txt', 'w')  # 创建名为cookies.txt的文件，以写入模式写入内容
         cookieWriter.write(cookies_str)
         cookieWriter.close()
     if WhenStart:
-            config.set('account', 'id', response.json()['data']['user']['id'])
-            config.set('account', 'nickname', response.json()['data']['user']['nickname'])
-            config.set('account', 'groupname', response.json()['data']['user']['group']['name'])
-            config.set('account', 'AllowShare', str(response.json()['data']['user']['group']['allowShare']))
-            config.set('account', 'AllowRemoteDownload', str(response.json()['data']['user']['group']['allowRemoteDownload']))
-            config.set('account', 'AllowArchiveDownload', str(response.json()['data']['user']['group']['allowArchiveDownload']))
-            try:
-                config.set('account','AdvanceDelete', str(response.json()['data']['user']['group']['advanceDelete']))
-                config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['user']['group']['allowWebDAVProxy']))
-            except:
-                print('无法读取某些配置，可能是服务端版本过低')
+        config.set('account', 'id', response.json()['data']['user']['id'])
+        config.set('account', 'nickname', response.json()['data']['user']['nickname'])
+        config.set('account', 'groupname', response.json()['data']['user']['group']['name'])
+        config.set('account', 'AllowShare', str(response.json()['data']['user']['group']['allowShare']))
+        config.set('account', 'AllowRemoteDownload',
+                   str(response.json()['data']['user']['group']['allowRemoteDownload']))
+        config.set('account', 'AllowArchiveDownload',
+                   str(response.json()['data']['user']['group']['allowArchiveDownload']))
+        try:
+            config.set('account', 'AdvanceDelete', str(response.json()['data']['user']['group']['advanceDelete']))
+            config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['user']['group']['allowWebDAVProxy']))
+        except:
+            print('无法读取某些配置，可能是服务端版本过低')
     else:
         config.set('account', 'id', response.json()['data']['id'])
         config.set('account', 'nickname', response.json()['data']['nickname'])
@@ -206,7 +214,7 @@ def SuccessLogin(response,WhenStart=False):
         config.set('account', 'AllowRemoteDownload', str(response.json()['data']['group']['allowRemoteDownload']))
         config.set('account', 'AllowArchiveDownload', str(response.json()['data']['group']['allowArchiveDownload']))
         try:
-            config.set('account','AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
+            config.set('account', 'AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
             config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
         except:
             print('无法读取某些配置，可能是服务端版本过低')
@@ -222,9 +230,10 @@ def SuccessLogin(response,WhenStart=False):
     GetDirList()
     RefrushStorage()
 
+
 # 刷新验证码
 def RefrushCaptcha(event):
-    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'  
+    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
     cookies = ReadCookies()
     session = requests.session()
     session.cookies = cookies
@@ -240,12 +249,13 @@ def RefrushCaptcha(event):
         captcha_photo = ImageTk.PhotoImage(image)
         label_captcha_Pic.config(image=captcha_photo)
         label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
-        #写入Cookies
-        cookies_dict = requests.utils.dict_from_cookiejar(response.cookies) #把cookies转化成字典
-        cookies_str = json.dumps(cookies_dict)                              #调用json模块的dumps函数，把cookies从字典再转成字符串。
-        cookieWriter = open('cookies.txt', 'w')             #创建名为cookies.txt的文件，以写入模式写入内容
+        # 写入Cookies
+        cookies_dict = requests.utils.dict_from_cookiejar(response.cookies)  # 把cookies转化成字典
+        cookies_str = json.dumps(cookies_dict)  # 调用json模块的dumps函数，把cookies从字典再转成字符串。
+        cookieWriter = open('cookies.txt', 'w')  # 创建名为cookies.txt的文件，以写入模式写入内容
         cookieWriter.write(cookies_str)
         cookieWriter.close()
+
 
 # OTP登录
 def loginOTP():
@@ -253,6 +263,7 @@ def loginOTP():
     button_TwoStepLogin.config(state='disabled')
     button_BackToLogin.config(state='disabled')
     threading.Thread(target=loginOTP_Process).start()
+
 
 def loginOTP_Process():
     username = entry_username.get()
@@ -284,7 +295,7 @@ def loginOTP_Process():
         pass
     if response.status_code == 200:
         status_code = response.json()['code']
-        if status_code == 203:    # 需要OTP验证码
+        if status_code == 203:  # 需要OTP验证码
             OTP_Cookies = response.cookies
             response2 = requests.post(TwoFA_URL, json=TwoFA_data, cookies=OTP_Cookies)
             if response2.status_code == 200:
@@ -297,12 +308,13 @@ def loginOTP_Process():
                     button_TwoStepLogin.config(state='normal')
                     button_BackToLogin.config(state='normal')
                 else:
-                    print('未知错误：',response2.json())
+                    print('未知错误：', response2.json())
         else:
             print(response.json())
             raise Exception("未知错误")
         if status_code != 0:
             loginErrorCode.pack()
+
 
 # 登录相关
 def login():
@@ -313,6 +325,7 @@ def login():
     # 创建新线程来处理登录过程
     login_thread = threading.Thread(target=login_process)
     login_thread.start()
+
 
 def login_process():
     username = entry_username.get()
@@ -348,26 +361,26 @@ def login_process():
         pass
     if response.status_code == 200:
         status_code = response.json()['code']
-        if status_code == 0:        #登录成功函数
+        if status_code == 0:  # 登录成功函数
             SuccessLogin(response=response)
             entry_username.config(state='normal')
             entry_password.config(state='normal')
             button_login.config(state='normal')
-        elif status_code == 203:    # 需要OTP验证码
+        elif status_code == 203:  # 需要OTP验证码
             frame_username.pack_forget()
             frame_password.pack_forget()
             frame_OTP.pack()
             button_login.pack_forget()
             button_register.pack_forget()
             button_forget.pack_forget()
-            button_BackToLogin.pack(side=ttk.LEFT,ipadx=20,padx=5)
-            button_TwoStepLogin.pack(side=ttk.LEFT,ipadx=20,padx=5)
+            button_BackToLogin.pack(side=ttk.LEFT, ipadx=20, padx=5)
+            button_TwoStepLogin.pack(side=ttk.LEFT, ipadx=20, padx=5)
             frame_button.pack_forget()
             frame_button.pack(pady=5)
             errorCode.set('需要OTP验证码')
             try:
                 otp_code = otp_key.now()
-                entry_OTP.insert(0,otp_code)
+                entry_OTP.insert(0, otp_code)
                 loginOTP()
             except:
                 pass
@@ -377,16 +390,16 @@ def login_process():
             entry_password.config(state='normal')
             button_login.config(state='normal')
             print(response.json())
-        elif status_code == 40017:  #账号被封禁
+        elif status_code == 40017:  # 账号被封禁
             errorCode.set('账号被封禁')
             print(response.json())
-        elif status_code == 40018:  #账号尚未激活
+        elif status_code == 40018:  # 账号尚未激活
             entry_username.config(state='normal')
             entry_password.config(state='normal')
             button_login.config(state='normal')
             errorCode.set('账号尚未激活，请在邮箱中确认')
             print(response.json())
-        elif status_code == 40020:  #用户名或密码错误
+        elif status_code == 40020:  # 用户名或密码错误
             errorCode.set('用户名或密码错误')
             entry_username.config(state='normal')
             entry_password.config(state='normal')
@@ -405,6 +418,7 @@ def login_process():
         if status_code != 0:
             loginErrorCode.pack()
 
+
 # 从输入OTP验证码页面返回账号密码页面的布局显示
 def BackToLogin():
     entry_OTP.delete(0, ttk.END)
@@ -414,19 +428,20 @@ def BackToLogin():
     frame_password.pack(pady=5)
     button_BackToLogin.pack_forget()
     button_TwoStepLogin.pack_forget()
-    button_login.pack(side=ttk.LEFT,ipadx=20,padx=5)
-    button_register.pack(side=ttk.LEFT,ipadx=20,padx=5)
-    button_forget.pack(side=ttk.LEFT,padx=10)
+    button_login.pack(side=ttk.LEFT, ipadx=20, padx=5)
+    button_register.pack(side=ttk.LEFT, ipadx=20, padx=5)
+    button_forget.pack(side=ttk.LEFT, padx=10)
     frame_button.pack(pady=5)
     loginErrorCode.pack_forget()
     entry_username.config(state='normal')
     entry_password.config(state='normal')
     button_login.config(state='normal')
 
+
 # 退出登录相关
 def LogOut():
     # 创建新线程来处理退出登录过程
-    fileList.delete(*fileList.get_children())   #清空文件列表
+    fileList.delete(*fileList.get_children())  # 清空文件列表
     ROOTPATH_URL = URL + '/api/v3/user/session'
     cookies = ReadCookies()
     session = requests.Session()
@@ -435,9 +450,9 @@ def LogOut():
     response = session.delete(ROOTPATH_URL)
     if response.status_code == 200:
         status_code = response.json()['code']
-        if status_code == 0:        #退出登录成功
+        if status_code == 0:  # 退出登录成功
             dialogs.Messagebox.ok(message='退出登录成功')
-            fileList.delete(*fileList.get_children())   #清空文件列表
+            fileList.delete(*fileList.get_children())  # 清空文件列表
             Home_Frame.pack_forget()
             app.title(Cloud_name)
             if Login_captcha:
@@ -451,10 +466,12 @@ def LogOut():
             button_login.config(state='normal')
             Login_Frame.pack()
 
+
 # 获取文件后缀的处理
 def get_last_part(variable):
     parts = variable.split('.')
     return parts[-1]
+
 
 # 返回上级文件的地址处理
 def last_dir(s):
@@ -463,6 +480,7 @@ def last_dir(s):
         return "/"
     else:
         return dir
+
 
 # 文件大小转换，可提供Byte转成正常人易读的类型
 def convert_size(size_bytes):
@@ -474,18 +492,22 @@ def convert_size(size_bytes):
     s = round(size_bytes / p, 2)
     return "%s%s" % (s, size_name[i])
 
+
 # 处理单击取消选中事件
 def LeftKeyOnclick(event):
     selected_items = fileList.selection()
     for item in selected_items:
         fileList.selection_remove(item)
 
+
 def RightKeyClickOpenFile():
     filelistonclick(event='')
+
 
 # 处理右键打开文件夹事件
 def RightKeyClickOpenDir():
     filelistonclick(event='')
+
 
 # 文件列表双击事件，处理文件（夹）打开
 def filelistonclick(event):
@@ -530,6 +552,7 @@ def filelistonclick(event):
     except IndexError:
         pass
 
+
 # 处理文件列表按下右键事件
 def filelistonrightclick(event):
     select_ID = fileList.focus()
@@ -544,8 +567,9 @@ def filelistonrightclick(event):
         fileList_Menu_Select_file.post(event.x + app.winfo_rootx(), event.y + app.winfo_rooty())
         app.update()
 
+
 # 请求文件列表并展示相关
-def GetDirList(path="%2F",WhenStart=False):
+def GetDirList(path="%2F", WhenStart=False):
     def task():
         fileList.pack_forget()
         ProgressBar.pack(fill=ttk.X)
@@ -566,14 +590,14 @@ def GetDirList(path="%2F",WhenStart=False):
             pass
         else:
             dialogs.Messagebox.show_error(message='未知错误：' + response.text)
-        fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
-    
+        fileList.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True)
+
     # 利用线程防止卡GUI
     def update_gui(response):
-        fileList.delete(*fileList.get_children())   #清空文件列表
-        path2 = path.replace('%2F','/')
+        fileList.delete(*fileList.get_children())  # 清空文件列表
+        path2 = path.replace('%2F', '/')
         if path2 != '/':
-            fileList.insert("",'0',values=('../', '', '上级目录', ''))
+            fileList.insert("", '0', values=('../', '', '上级目录', ''))
         AddressBar.delete(0, END)
         AddressBar.insert(0, path2)
         global DirID
@@ -601,16 +625,17 @@ def GetDirList(path="%2F",WhenStart=False):
                 name = "📁 " + name
             date = obj.get('date', '').replace('T', ' ').split('.')[0]
             FileID = obj.get('id', '')
-            objects_list.append((name, str(size), type, date,str(FileID)))
+            objects_list.append((name, str(size), type, date, str(FileID)))
         for itm in objects_list:
-            fileList.insert("",'end',values=itm)
+            fileList.insert("", 'end', values=itm)
         if WhenStart:
             Login_Frame.pack_forget()
             Home_Frame.pack()
-        
+
         ProgressBar.pack_forget()
 
     threading.Thread(target=task).start()
+
 
 # 处理地址栏更改后刷新文件列表事件
 def ListNewDir(event):
@@ -620,18 +645,20 @@ def ListNewDir(event):
     else:
         SearchFile(Address)
 
+
 # 处理文件拖入窗口上传事件
 def Dragged_Files(files):
     msg = '\n'.join((item.decode('utf-8') for item in files))
     msg = '您拖放的文件：\n' + msg
     dialogs.Messagebox.show_info(message=msg)
 
+
 # 上传事件
 def UploadFile():
     file_path = filedialog.askopenfilenames()
     if file_path != '':
         FileNumber = len(file_path)
-        #循环获取文件路径、大小、名字
+        # 循环获取文件路径、大小、名字
         for i in range(FileNumber):
             file_path = file_path[i]
             file_name = os.path.basename(file_path)
@@ -643,12 +670,13 @@ def UploadFile():
                 'policy_id': Policy_ID,
                 'size': file_size,
                 'name': file_name
-                }
+            }
             session = requests.Session()
             session.keep_alive = False
             session.cookies = ReadCookies()
             response = session.put(UploadFile_URL_Require, data=json.dumps(data))
             print(response.text)
+
 
 # 下载文件事件
 def DownloadFile():
@@ -668,6 +696,7 @@ def DownloadFile():
         Download_URL = response.json()['data']
     webbrowser.open(Download_URL)
 
+
 # 刷新用户容量函数
 def RefrushStorage():
     Require_URL = URL + '/api/v3/user/storage'
@@ -679,23 +708,28 @@ def RefrushStorage():
     Storage = json.loads(response.text)
     used = convert_size(Storage['data']['used'])
     total = convert_size(Storage['data']['total'])
-    accountText = config.get('account','nickname') + ' ' + used + '/' + total
+    accountText = config.get('account', 'nickname') + ' ' + used + '/' + total
     accountInfo.config(text=accountText)
+
 
 # 搜索文件事件
 def SearchVideo():
     SearchFile(Type='video')
 
+
 def SearchAudio():
     SearchFile(Type='audio')
+
 
 def SearchImage():
     SearchFile(Type='image')
 
+
 def SearchDoc():
     SearchFile(Type='doc')
 
-def SearchFile(Keywords='',Type='None'):
+
+def SearchFile(Keywords='', Type='None'):
     if Type == 'None' and Keywords == '':
         dialogs.Messagebox.show_error(message='请输入搜索关键词或路径')
         return 0
@@ -716,8 +750,8 @@ def SearchFile(Keywords='',Type='None'):
     response = session.get(Search_URL)
     status_code = response.json()['code']
     if status_code == 0:
-        fileList.delete(*fileList.get_children())   #清空文件列表
-        fileList.insert("",'0',values=('../', '', '上级目录', ''))
+        fileList.delete(*fileList.get_children())  # 清空文件列表
+        fileList.insert("", '0', values=('../', '', '上级目录', ''))
         AddressBar.delete(0, END)
         app.title('搜索结果 - ' + Cloud_name)
         FileList = json.loads(response.text)
@@ -737,11 +771,12 @@ def SearchFile(Keywords='',Type='None'):
                 name = "📁 " + name
             date = obj.get('date', '').replace('T', ' ').split('.')[0]
             FileID = obj.get('id', '')
-            objects_list.append((name, str(size), type, date,str(FileID)))
+            objects_list.append((name, str(size), type, date, str(FileID)))
         for itm in objects_list:
-            fileList.insert("",'end',values=itm)
+            fileList.insert("", 'end', values=itm)
     else:
         dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+
 
 # 从文件预览中返回
 def filePreview_Back():
@@ -750,20 +785,24 @@ def filePreview_Back():
     app.title(title)
     FilePreview_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
-    TextPreview_textbox.delete(1.0,END)
+    TextPreview_textbox.delete(1.0, END)
+
 
 # 处理密码框与验证码框回车即登录事件
 def Entry_on_enter_pressed(event):
     login()
 
+
 # 处理OTP框回车即登录事件
 def OTP_Entry_on_enter_pressed(event):
     loginOTP()
+
 
 # 右键刷新事件
 def ReFrush():
     GetDirList(path=RealAddress)
     RefrushStorage()
+
 
 # 新建文件事件
 def MakeFile():
@@ -772,7 +811,7 @@ def MakeFile():
         MakeDir_URL = URL + '/api/v3/file/create'
         data = {
             'path': RealAddress + "/" + FileName
-            }
+        }
         cookies = ReadCookies()
         session = requests.Session()
         session.keep_alive = False
@@ -786,6 +825,7 @@ def MakeFile():
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
     else:
         dialogs.Messagebox.show_error(message='文件名不能为空')
+
 
 # 新建文件夹事件
 def MakeDir():
@@ -808,12 +848,13 @@ def MakeDir():
     else:
         dialogs.Messagebox.show_error(message='文件夹名不能为空')
 
+
 # 删除文件相关
 def DeleteFile():
     DeleteURL = URL + "/api/v3/object"
     select_ID = fileList.focus()
     PreDeleteFileID = fileList.item(select_ID)['values'][4]
-    PreDeleteFileName = fileList.item(select_ID)['values'][0].replace('📄 ','')
+    PreDeleteFileName = fileList.item(select_ID)['values'][0].replace('📄 ', '')
     message = '您确定要删除 ' + PreDeleteFileName + ' 吗？'
     RealDelete = dialogs.Messagebox.yesno(message=message, title='删除对象')
     if RealDelete == '确认' or RealDelete == 'Yes':
@@ -823,25 +864,26 @@ def DeleteFile():
         session = requests.Session()
         session.keep_alive = False
         session.cookies = cookies
-        response = session.delete(DeleteURL,data=json.dumps(data))
+        response = session.delete(DeleteURL, data=json.dumps(data))
         if response.status_code == 200:
-                status_code = response.json()['code']
-                if status_code == 0:
-                    dialogs.Messagebox.show_info(message='删除成功')
-                else:
-                    print(response.text)
-                    dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+            status_code = response.json()['code']
+            if status_code == 0:
+                dialogs.Messagebox.show_info(message='删除成功')
+            else:
+                print(response.text)
+                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
         else:
             dialogs.Messagebox.show_error(message='文件夹名不能为空')
         GetDirList(path=RealAddress)
         RefrushStorage()
+
 
 # 删除文件夹相关
 def DeleteDir():
     DeleteURL = URL + "/api/v3/object"
     select_ID = fileList.focus()
     PreDeleteDirID = fileList.item(select_ID)['values'][4]
-    PreDeleteDirName = fileList.item(select_ID)['values'][0].replace('📁 ','')
+    PreDeleteDirName = fileList.item(select_ID)['values'][0].replace('📁 ', '')
     message = '您确定要删除 ' + PreDeleteDirName + ' 吗？'
     RealDelete = dialogs.Messagebox.yesno(message=message, title='删除对象')
     if RealDelete == '确认' or RealDelete == 'Yes':
@@ -851,18 +893,19 @@ def DeleteDir():
         session = requests.Session()
         session.keep_alive = False
         session.cookies = cookies
-        response = session.delete(DeleteURL,data=json.dumps(data))
+        response = session.delete(DeleteURL, data=json.dumps(data))
         if response.status_code == 200:
-                status_code = response.json()['code']
-                if status_code == 0:
-                    dialogs.Messagebox.show_info(message='删除成功')
-                else:
-                    print(response.text)
-                    dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+            status_code = response.json()['code']
+            if status_code == 0:
+                dialogs.Messagebox.show_info(message='删除成功')
+            else:
+                print(response.text)
+                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
         else:
             dialogs.Messagebox.show_error(message='文件夹名不能为空')
         GetDirList(path=RealAddress)
         RefrushStorage()
+
 
 # WebDAV页面
 def WebDAVPage():
@@ -897,15 +940,17 @@ def WebDAVPage():
             objects_List.append([Name, Password, Root, CreatedAt])
         for itm in objects_List:
             WebDAV_List.insert('', 'end', values=itm)
-        
+
         ProgressBar.pack_forget()
 
     threading.Thread(target=task).start()
+
 
 # 进入WebDAV账户创建页面
 def CreateWebDAVAccount():
     WebDAV_Settings_Frame.pack_forget()
     CreateWebDAVAccount_Frame.pack(fill=BOTH, expand=YES)
+
 
 # 创建WebDAV账户事件
 def CreateWebDAVAccountOnClick():
@@ -937,13 +982,15 @@ def CreateWebDAVAccountOnClick():
         entry_WebDAV_Path.delete(0, END)
         GetDirList(path=RealAddress)
         RefrushStorage()
-            
+
+
 # 退出WebDAV账户创建页面
 def ExitCreateWebDAVAccount():
     CreateWebDAVAccount_Frame.pack_forget()
     WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
     entry_WebDAV_Name.delete(0, END)
     entry_WebDAV_Path.delete(0, END)
+
 
 # 处理WebDAV右键按下的事件
 def WebDAV_List_Click(event):
@@ -952,6 +999,7 @@ def WebDAV_List_Click(event):
     if selected_item_values != '':
         WebDAV_Menu.post(event.x + app.winfo_rootx(), event.y + app.winfo_rooty())
         app.update()
+
 
 # 处理WebDAV复制密码事件
 def CopyWebDAVPassword():
@@ -963,9 +1011,11 @@ def CopyWebDAVPassword():
     except:
         dialogs.Messagebox.show_error(message='未选择任何项目')
 
+
 # 处理连接iOS客户端事件
 def MobileConnect():
     print('TODO:连接iOS客户端')
+
 
 # 从WebDAV返回到文件列表页
 def WebDAVPage_Back():
@@ -973,43 +1023,51 @@ def WebDAVPage_Back():
     WebDAV_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
+
 # 个人设置页面
 def Personal_Settings():
     Home_Frame.pack_forget()
     Personal_Settings_Frame.pack(fill=BOTH, expand=YES)
+
 
 # 从个人设置返回到文件列表页
 def Personal_Settings_Back():
     Personal_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
+
 # APP设置启动
 def AppSettings():
     config = open('config.ini', 'r', encoding='gb18030')
-    APPSettingstextbox.insert(1.0,config.readlines())
+    APPSettingstextbox.insert(1.0, config.readlines())
     config.close()
     Home_Frame.pack_forget()
     AppSettings_Frame.pack(fill=BOTH, expand=YES)
 
+
 def AppSettings_Save():
     config = open('config.ini', 'w', encoding='gb18030')
-    config.write(APPSettingstextbox.get(1.0,END))
+    config.write(APPSettingstextbox.get(1.0, END))
     config.close()
     dialogs.Messagebox.show_info(message='保存成功')
     AppSettings_Back()
+
 
 # App设置返回
 def AppSettings_Back():
     AppSettings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
 
+
 # 程序获得焦点时读取剪切板，并查询是否为目标服务器的分享链接，如果是则提醒用户是否访问
 def ScanShareURL():
     print(pyperclip.get_clipboard())
 
+
 # 退出APP执行的内容
 def ExitAPP():
     sys.exit()
+
 
 """
 ======================================
@@ -1020,10 +1078,10 @@ def ExitAPP():
 app = ttk.Window(title='HeyCloud Desktop')
 app.geometry("300x200")
 app.place_window_center()
-app.attributes('-alpha',0.9) #设置窗口半透明
+app.attributes('-alpha', 0.9)  # 设置窗口半透明
 app.protocol("WM_TAKE_FOCUS", ScanShareURL)
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
-app.tk.call('tk', 'scaling', ScaleFactor/75)
+app.tk.call('tk', 'scaling', ScaleFactor / 75)
 
 app_style = ttk.Style()
 app_style.theme_use(theme['Theme'])
@@ -1040,21 +1098,21 @@ ProgressBar.start(25)
 Launch_Frame = ttk.Frame(app)
 Launch_Frame.pack(fill=BOTH, expand=YES)
 
-Launching_Label = ttk.Label(Launch_Frame, text=locales['launching'],font=(Fonts,16))
+Launching_Label = ttk.Label(Launch_Frame, text=locales['launching'], font=(Fonts, 16))
 Launching_Label.place(relx=0.5, rely=0.5, anchor=ttk.CENTER)
 
-#登录页布局
+# 登录页布局
 Login_Frame = ttk.Frame(app)
 
 loginFrame = ttk.Frame(Login_Frame)
-loginFrame.pack(side=ttk.LEFT,fill=BOTH, expand=YES)
+loginFrame.pack(side=ttk.LEFT, fill=BOTH, expand=YES)
 
 LoginAppName = '登录 ' + Cloud_name
-label_APPNAME = ttk.Label(loginFrame, text=LoginAppName,font=(Fonts,24))
+label_APPNAME = ttk.Label(loginFrame, text=LoginAppName, font=(Fonts, 24))
 label_APPNAME.pack(pady=10)
 
 errorCode = ttk.StringVar()
-loginErrorCode = ttk.Label(loginFrame, bootstyle="danger",font=(Fonts,12),textvariable=errorCode)
+loginErrorCode = ttk.Label(loginFrame, bootstyle="danger", font=(Fonts, 12), textvariable=errorCode)
 
 frame_username = ttk.Frame(loginFrame)
 frame_username.pack(pady=5)
@@ -1074,25 +1132,25 @@ frame_button.pack(pady=5)
 label_username = ttk.LabelFrame(frame_username, text=" 用 户 名 ")
 label_username.pack(side=ttk.LEFT)
 
-entry_username = ttk.Entry(label_username,width=30)
+entry_username = ttk.Entry(label_username, width=30)
 try:
-    entry_username.insert(0,localaccount)
+    entry_username.insert(0, localaccount)
 except:
     pass
-entry_username.pack(padx=10,pady=10)
+entry_username.pack(padx=10, pady=10)
 
 label_password = ttk.LabelFrame(frame_password, text=" 密 码 ")
 label_password.pack(side=ttk.LEFT)
 
-entry_password = ttk.Entry(label_password, show="•",width=30)
-entry_password.pack(padx=10,pady=10)
+entry_password = ttk.Entry(label_password, show="•", width=30)
+entry_password.pack(padx=10, pady=10)
 entry_password.bind('<Return>', Entry_on_enter_pressed)
 
 label_captcha = ttk.LabelFrame(frame_captcha, text="验 证 码")
 label_captcha.pack(side=ttk.LEFT)
 
-entry_captcha = ttk.Entry(label_captcha,width=30)
-entry_captcha.pack(padx=10,pady=10)
+entry_captcha = ttk.Entry(label_captcha, width=30)
+entry_captcha.pack(padx=10, pady=10)
 entry_captcha.bind('<Return>', Entry_on_enter_pressed)
 
 label_captcha_Pic = ttk.Label(loginFrame)
@@ -1101,182 +1159,184 @@ label_captcha_Pic.bind("<Button-1>", RefrushCaptcha)
 
 label_OTP = ttk.Labelframe(frame_OTP, text="验 证 码")
 label_OTP.pack(side=ttk.LEFT)
-entry_OTP = ttk.Entry(label_OTP,width=30)
-entry_OTP.pack(padx=10,pady=10)
+entry_OTP = ttk.Entry(label_OTP, width=30)
+entry_OTP.pack(padx=10, pady=10)
 entry_OTP.bind('<Return>', OTP_Entry_on_enter_pressed)
 
 button_login = ttk.Button(frame_button, text="登录", command=login)
-button_login.pack(side=ttk.LEFT,ipadx=20,padx=5)
+button_login.pack(side=ttk.LEFT, ipadx=20, padx=5)
 
-#注册按钮相关
-button_register = ttk.Button(frame_button, text="注册",bootstyle="outline",command=SignUP)
-button_register.pack(side=ttk.LEFT,ipadx=20,padx=5)
+# 注册按钮相关
+button_register = ttk.Button(frame_button, text="注册", bootstyle="outline", command=SignUP)
+button_register.pack(side=ttk.LEFT, ipadx=20, padx=5)
 
-#忘记密码相关
-button_forget = ttk.Button(frame_button, text="忘记密码",bootstyle="link",command=forgetPassword)
-button_forget.pack(side=ttk.LEFT,padx=10)
+# 忘记密码相关
+button_forget = ttk.Button(frame_button, text="忘记密码", bootstyle="link", command=forgetPassword)
+button_forget.pack(side=ttk.LEFT, padx=10)
 
-#两步验证返回按钮
-button_BackToLogin = ttk.Button(frame_button, text="返回",bootstyle="outline",command=BackToLogin)
+# 两步验证返回按钮
+button_BackToLogin = ttk.Button(frame_button, text="返回", bootstyle="outline", command=BackToLogin)
 
-#两步验证登录按钮
-button_TwoStepLogin = ttk.Button(frame_button, text="登录",command=loginOTP)
+# 两步验证登录按钮
+button_TwoStepLogin = ttk.Button(frame_button, text="登录", command=loginOTP)
 
-#登录页布局结束,云盘主页布局开始
+# 登录页布局结束,云盘主页布局开始
 
 Home_Frame = ttk.Frame(app)
 
 MenuBar = ttk.Frame(Home_Frame)
-MenuBar.pack(side=ttk.TOP,fill=ttk.X)
+MenuBar.pack(side=ttk.TOP, fill=ttk.X)
 
-fileMenuButton = ttk.Menubutton(MenuBar, text="📁 文件",bootstyle=theme['Menu'])
+fileMenuButton = ttk.Menubutton(MenuBar, text="📁 文件", bootstyle=theme['Menu'])
 fileMenuButton.pack(side=ttk.LEFT)
 
 AddressBar = ttk.Entry(MenuBar)
-AddressBar.insert(0,'/')
+AddressBar.insert(0, '/')
 AddressBar.bind('<Return>', ListNewDir)
-AddressBar.pack(side=ttk.LEFT,fill=ttk.X,padx=10,ipadx=120)
+AddressBar.pack(side=ttk.LEFT, fill=ttk.X, padx=10, ipadx=120)
 
-accountInfo = ttk.Menubutton(MenuBar, text="信息加载中……",bootstyle=theme['Menu'])
+accountInfo = ttk.Menubutton(MenuBar, text="信息加载中……", bootstyle=theme['Menu'])
 accountInfo.pack(side=ttk.RIGHT)
 
-FileMenu = ttk.Menu(fileMenuButton,relief='raised')
-FileMenu.add_command(label="📁      全部文件",font=(Fonts,10),command=GetDirList)  #/api/v3/directory/
-FileMenu.add_command(label="🎞️视频",font=(Fonts,10),command=SearchVideo)      #/api/v3/file/search/video/internal
-FileMenu.add_command(label="🖼️图片",font=(Fonts,10),command=SearchImage)      #/api/v3/file/search/image/internal
-FileMenu.add_command(label="🎵      音乐",font=(Fonts,10),command=SearchAudio)      #/api/v3/file/search/audio/internal
-FileMenu.add_command(label="📄      文档",font=(Fonts,10),command=SearchDoc)      #/api/v3/file/search/doc/internal
+FileMenu = ttk.Menu(fileMenuButton, relief='raised')
+FileMenu.add_command(label="📁      全部文件", font=(Fonts, 10), command=GetDirList)  # /api/v3/directory/
+FileMenu.add_command(label="🎞️视频", font=(Fonts, 10), command=SearchVideo)  # /api/v3/file/search/video/internal
+FileMenu.add_command(label="🖼️图片", font=(Fonts, 10), command=SearchImage)  # /api/v3/file/search/image/internal
+FileMenu.add_command(label="🎵      音乐", font=(Fonts, 10), command=SearchAudio)  # /api/v3/file/search/audio/internal
+FileMenu.add_command(label="📄      文档", font=(Fonts, 10), command=SearchDoc)  # /api/v3/file/search/doc/internal
 FileMenu.add_separator()
-FileMenu.add_command(label='上传文件',font=(Fonts,10),command=UploadFile)
+FileMenu.add_command(label='上传文件', font=(Fonts, 10), command=UploadFile)
 FileMenu.add_separator()
-FileMenu.add_command(label='连接',font=(Fonts,10),command=WebDAVPage)
+FileMenu.add_command(label='连接', font=(Fonts, 10), command=WebDAVPage)
 fileMenuButton.config(menu=FileMenu)
 
-UserMenu = ttk.Menu(accountInfo,relief='raised')
-UserMenu.add_command(label="个人设置",font=(Fonts,10),command=Personal_Settings)
-UserMenu.add_command(label="APP设置",font=(Fonts,10),command=AppSettings)
-UserMenu.add_command(label="管理面板",font=(Fonts,10))
-UserMenu.add_command(label="退出登录",font=(Fonts,10),command=LogOut)
+UserMenu = ttk.Menu(accountInfo, relief='raised')
+UserMenu.add_command(label="个人设置", font=(Fonts, 10), command=Personal_Settings)
+UserMenu.add_command(label="APP设置", font=(Fonts, 10), command=AppSettings)
+UserMenu.add_command(label="管理面板", font=(Fonts, 10))
+UserMenu.add_command(label="退出登录", font=(Fonts, 10), command=LogOut)
 UserMenu.add_separator()
-UserMenu.add_command(label="关于 HeyCloud Desktop",font=(Fonts,10))
+UserMenu.add_command(label="关于 HeyCloud Desktop", font=(Fonts, 10))
 accountInfo.config(menu=UserMenu)
 
 fileListFrame = ttk.Frame(Home_Frame)
-fileListFrame.pack(side=ttk.BOTTOM,fill=ttk.BOTH,expand=True)
+fileListFrame.pack(side=ttk.BOTTOM, fill=ttk.BOTH, expand=True)
 
 scrollbar = ttk.Scrollbar(fileListFrame, orient=VERTICAL, bootstyle="round")
 scrollbar.pack(side='right', fill='y')
-fileList = ttk.Treeview(fileListFrame,columns=["名称","大小","类型","修改日期",'id'],show="headings",yscrollcommand=scrollbar.set)
-fileList.column("名称",width=200,)
-fileList.column("大小",width=50)
-fileList.column("类型",width=0,stretch=False, anchor="center")
+fileList = ttk.Treeview(fileListFrame, columns=["名称", "大小", "类型", "修改日期", 'id'], show="headings",
+                        yscrollcommand=scrollbar.set)
+fileList.column("名称", width=200, )
+fileList.column("大小", width=50)
+fileList.column("类型", width=0, stretch=False, anchor="center")
 fileList.heading('类型')
 fileList.column("修改日期", anchor="center")
-fileList.column("id",width=0,stretch=False)
+fileList.column("id", width=0, stretch=False)
 fileList.heading("名称", text="名称")
 fileList.heading("大小", text="大小")
 fileList.heading("类型", text="类型")
 fileList.heading("修改日期", text="修改日期")
 fileList.heading("id", text="id")
 filelistStyle = ttk.Style()
-filelistStyle.configure("Treeview",font=(Fonts,12))
-filelistStyle.configure("Treeview",rowheight=35)
-fileList.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
-fileList.bind("<Button-1>",LeftKeyOnclick)
-fileList.bind("<Double-Button-1>",filelistonclick)
-fileList.bind("<Button-3>",filelistonrightclick)
+filelistStyle.configure("Treeview", font=(Fonts, 12))
+filelistStyle.configure("Treeview", rowheight=35)
+fileList.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True)
+fileList.bind("<Button-1>", LeftKeyOnclick)
+fileList.bind("<Double-Button-1>", filelistonclick)
+fileList.bind("<Button-3>", filelistonrightclick)
 windnd.hook_dropfiles(fileList, func=Dragged_Files)
 scrollbar.config(command=fileList.yview)
 
 fileList_Menu_No_Select = ttk.Menu(app)
-fileList_Menu_No_Select.add_command(label="刷新",font=(Fonts,10),command=ReFrush)
+fileList_Menu_No_Select.add_command(label="刷新", font=(Fonts, 10), command=ReFrush)
 fileList_Menu_No_Select.add_separator()
-fileList_Menu_No_Select.add_command(label="离线下载",font=(Fonts,10))
+fileList_Menu_No_Select.add_command(label="离线下载", font=(Fonts, 10))
 fileList_Menu_No_Select.add_separator()
-fileList_Menu_No_Select.add_command(label="📁 创建文件夹",font=(Fonts,10),command=MakeDir)
-fileList_Menu_No_Select.add_command(label="📄 创建文件",font=(Fonts,10),command=MakeFile)
+fileList_Menu_No_Select.add_command(label="📁 创建文件夹", font=(Fonts, 10), command=MakeDir)
+fileList_Menu_No_Select.add_command(label="📄 创建文件", font=(Fonts, 10), command=MakeFile)
 
 fileList_Menu_Select_dir = ttk.Menu(app)
-fileList_Menu_Select_dir.add_command(label="进入",font=(Fonts,10),command=RightKeyClickOpenDir)
+fileList_Menu_Select_dir.add_command(label="进入", font=(Fonts, 10), command=RightKeyClickOpenDir)
 fileList_Menu_Select_dir.add_separator()
-fileList_Menu_Select_dir.add_command(label="下载",font=(Fonts,10))
-fileList_Menu_Select_dir.add_command(label="打包下载",font=(Fonts,10))
-fileList_Menu_Select_dir.add_command(label="批量获取外链",font=(Fonts,10))
-fileList_Menu_Select_dir.add_command(label='创建分享链接',font=(Fonts,10))
-fileList_Menu_Select_dir.add_command(label="详细信息",font=(Fonts,10))
+fileList_Menu_Select_dir.add_command(label="下载", font=(Fonts, 10))
+fileList_Menu_Select_dir.add_command(label="打包下载", font=(Fonts, 10))
+fileList_Menu_Select_dir.add_command(label="批量获取外链", font=(Fonts, 10))
+fileList_Menu_Select_dir.add_command(label='创建分享链接', font=(Fonts, 10))
+fileList_Menu_Select_dir.add_command(label="详细信息", font=(Fonts, 10))
 fileList_Menu_Select_dir.add_separator()
-fileList_Menu_Select_dir.add_command(label="重命名",font=(Fonts,10))
-fileList_Menu_Select_dir.add_command(label="复制",font=(Fonts,10))
-fileList_Menu_Select_dir.add_command(label="移动",font=(Fonts,10))
+fileList_Menu_Select_dir.add_command(label="重命名", font=(Fonts, 10))
+fileList_Menu_Select_dir.add_command(label="复制", font=(Fonts, 10))
+fileList_Menu_Select_dir.add_command(label="移动", font=(Fonts, 10))
 fileList_Menu_Select_dir.add_separator()
-fileList_Menu_Select_dir.add_command(label="删除",font=(Fonts,10),command=DeleteDir)
+fileList_Menu_Select_dir.add_command(label="删除", font=(Fonts, 10), command=DeleteDir)
 
 fileList_Menu_Select_file = ttk.Menu(app)
-fileList_Menu_Select_file.add_command(label="打开",font=(Fonts,10),command=RightKeyClickOpenFile)
-fileList_Menu_Select_file.add_command(label="下载",font=(Fonts,10),command=DownloadFile)
+fileList_Menu_Select_file.add_command(label="打开", font=(Fonts, 10), command=RightKeyClickOpenFile)
+fileList_Menu_Select_file.add_command(label="下载", font=(Fonts, 10), command=DownloadFile)
 fileList_Menu_Select_file.add_separator()
-fileList_Menu_Select_file.add_command(label="压缩",font=(Fonts,10))
-fileList_Menu_Select_file.add_command(label="创建分享链接",font=(Fonts,10))
-fileList_Menu_Select_file.add_command(label="详细信息",font=(Fonts,10))
+fileList_Menu_Select_file.add_command(label="压缩", font=(Fonts, 10))
+fileList_Menu_Select_file.add_command(label="创建分享链接", font=(Fonts, 10))
+fileList_Menu_Select_file.add_command(label="详细信息", font=(Fonts, 10))
 fileList_Menu_Select_file.add_separator()
-fileList_Menu_Select_file.add_command(label="重命名",font=(Fonts,10))
-fileList_Menu_Select_file.add_command(label="复制",font=(Fonts,10))
-fileList_Menu_Select_file.add_command(label="移动",font=(Fonts,10))
+fileList_Menu_Select_file.add_command(label="重命名", font=(Fonts, 10))
+fileList_Menu_Select_file.add_command(label="复制", font=(Fonts, 10))
+fileList_Menu_Select_file.add_command(label="移动", font=(Fonts, 10))
 fileList_Menu_Select_file.add_separator()
-fileList_Menu_Select_file.add_command(label="删除",font=(Fonts,10),command=DeleteFile)
+fileList_Menu_Select_file.add_command(label="删除", font=(Fonts, 10), command=DeleteFile)
 
 # 主页布局结束，文件预览界面开始
 
 FilePreview_Frame = ttk.Frame(app)
 
-FilePreview_title = ttk.Label(FilePreview_Frame,text="untitled.txt",font=(Fonts, 18))
-FilePreview_title.pack(anchor='nw',padx=20,pady=20)
+FilePreview_title = ttk.Label(FilePreview_Frame, text="untitled.txt", font=(Fonts, 18))
+FilePreview_title.pack(anchor='nw', padx=20, pady=20)
 
-TextPreview_textbox = ttk.ScrolledText(FilePreview_Frame,font=("Consolas",10))
-TextPreview_textbox.pack(fill=ttk.BOTH,expand=True)
+TextPreview_textbox = ttk.ScrolledText(FilePreview_Frame, font=("Consolas", 10))
+TextPreview_textbox.pack(fill=ttk.BOTH, expand=True)
 
 FilePreview_Button_Frame = ttk.Frame(FilePreview_Frame)
-FilePreview_Button_Frame.pack(side=ttk.BOTTOM,anchor="se",padx=20,pady=20)
+FilePreview_Button_Frame.pack(side=ttk.BOTTOM, anchor="se", padx=20, pady=20)
 
-FilePreview_Save_button = ttk.Button(FilePreview_Button_Frame,text="保存 ( 暂不支持 )",state='disabled')
-FilePreview_Save_button.pack(side=ttk.LEFT,padx=10,ipadx=20)
+FilePreview_Save_button = ttk.Button(FilePreview_Button_Frame, text="保存 ( 暂不支持 )", state='disabled')
+FilePreview_Save_button.pack(side=ttk.LEFT, padx=10, ipadx=20)
 
-FilePreview_Cancel_button = ttk.Button(FilePreview_Button_Frame,text="取消",bootstyle='outline',command=filePreview_Back)
-FilePreview_Cancel_button.pack(side=ttk.LEFT,padx=10,ipadx=20)
+FilePreview_Cancel_button = ttk.Button(FilePreview_Button_Frame, text="取消", bootstyle='outline',
+                                       command=filePreview_Back)
+FilePreview_Cancel_button.pack(side=ttk.LEFT, padx=10, ipadx=20)
 
 # 文件预览界面结束，WebDAV配置页布局开始
 
 WebDAV_Settings_Frame = ttk.Frame(app)
 
 WebDAV_Title_Frame = ttk.Frame(WebDAV_Settings_Frame)
-WebDAV_Title_Frame.pack(anchor='n',fill=ttk.X)
+WebDAV_Title_Frame.pack(anchor='n', fill=ttk.X)
 
-WebDAV_title = ttk.Label(WebDAV_Title_Frame,text="连接",font=(Fonts, 18))
-WebDAV_title.pack(side=ttk.LEFT,padx=20,pady=20)
+WebDAV_title = ttk.Label(WebDAV_Title_Frame, text="连接", font=(Fonts, 18))
+WebDAV_title.pack(side=ttk.LEFT, padx=20, pady=20)
 
-WebDAV_Cancel_button = ttk.Button(WebDAV_Title_Frame,text="取消",bootstyle='outline',command=WebDAVPage_Back)
-WebDAV_Cancel_button.pack(side=ttk.RIGHT,padx=20,ipadx=20)
+WebDAV_Cancel_button = ttk.Button(WebDAV_Title_Frame, text="取消", bootstyle='outline', command=WebDAVPage_Back)
+WebDAV_Cancel_button.pack(side=ttk.RIGHT, padx=20, ipadx=20)
 
-WebDAV_Add_button = ttk.Button(WebDAV_Title_Frame,text="添加",command=CreateWebDAVAccount)
-WebDAV_Add_button.pack(side=ttk.RIGHT,padx=20,ipadx=20)
+WebDAV_Add_button = ttk.Button(WebDAV_Title_Frame, text="添加", command=CreateWebDAVAccount)
+WebDAV_Add_button.pack(side=ttk.RIGHT, padx=20, ipadx=20)
 
-MobileConnect = ttk.Button(WebDAV_Title_Frame,text="iOS 客户端",command=MobileConnect)
-MobileConnect.pack(side=ttk.RIGHT,padx=20,ipadx=20)
+MobileConnect = ttk.Button(WebDAV_Title_Frame, text="iOS 客户端", command=MobileConnect)
+MobileConnect.pack(side=ttk.RIGHT, padx=20, ipadx=20)
 
-WebDAV_List = ttk.Treeview(WebDAV_Settings_Frame,columns=["备注名","密码","相对根目录","创建日期"],show=HEADINGS)
-WebDAV_List.column('备注名',width=150)
-WebDAV_List.column('密码',width=350)
-WebDAV_List.column('相对根目录',width=100)
-WebDAV_List.column('创建日期',width=100)
+WebDAV_List = ttk.Treeview(WebDAV_Settings_Frame, columns=["备注名", "密码", "相对根目录", "创建日期"], show=HEADINGS)
+WebDAV_List.column('备注名', width=150)
+WebDAV_List.column('密码', width=350)
+WebDAV_List.column('相对根目录', width=100)
+WebDAV_List.column('创建日期', width=100)
 WebDAV_List.heading("备注名", text="备注名")
 WebDAV_List.heading("密码", text="密码")
 WebDAV_List.heading("相对根目录", text="相对根目录")
 WebDAV_List.heading("创建日期", text="创建日期")
-WebDAV_List.bind("<Button-3>",WebDAV_List_Click)
-WebDAV_List.pack(side=ttk.LEFT,fill=ttk.BOTH,expand=True)
+WebDAV_List.bind("<Button-3>", WebDAV_List_Click)
+WebDAV_List.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True)
 
 WebDAV_Menu = ttk.Menu(app)
-WebDAV_Menu.add_command(label="复制密码",command=CopyWebDAVPassword)
+WebDAV_Menu.add_command(label="复制密码", command=CopyWebDAVPassword)
 WebDAV_Menu.add_command(label="开启 / 关闭只读")
 WebDAV_Menu.add_command(label="开启 / 关闭反代")
 WebDAV_Menu.add_command(label="删除")
@@ -1285,18 +1345,20 @@ WebDAV_Menu.add_command(label="删除")
 
 ConnectMobileFrame = ttk.Frame(app)
 
-ConnectMobile_title = ttk.Label(ConnectMobileFrame,text="iOS 客户端",font=(Fonts, 18))
-ConnectMobile_title.pack(side=ttk.LEFT,padx=20,pady=20)
+ConnectMobile_title = ttk.Label(ConnectMobileFrame, text="iOS 客户端", font=(Fonts, 18))
+ConnectMobile_title.pack(side=ttk.LEFT, padx=20, pady=20)
 
-ConnectMobile_Label = ttk.Label(ConnectMobileFrame,text="请在App Store下载“Cloudreve”应用程序，然后打开应用，并扫面以下二维码：",font=(Fonts, 12))
-ConnectMobile_Label.pack(anchor="nw",padx=40)
+ConnectMobile_Label = ttk.Label(ConnectMobileFrame,
+                                text="请在App Store下载“Cloudreve”应用程序，然后打开应用，并扫面以下二维码：",
+                                font=(Fonts, 12))
+ConnectMobile_Label.pack(anchor="nw", padx=40)
 
 # iOS客户端连接页面结束，创建WebDAV账户开始
 
 CreateWebDAVAccount_Frame = ttk.Frame(app)
 
-CreateWebDAVAccount_title = ttk.Label(CreateWebDAVAccount_Frame,text="创建WebDAV账户",font=(Fonts, 18))
-CreateWebDAVAccount_title.pack(anchor="nw",padx=20,pady=20)
+CreateWebDAVAccount_title = ttk.Label(CreateWebDAVAccount_Frame, text="创建WebDAV账户", font=(Fonts, 18))
+CreateWebDAVAccount_title.pack(anchor="nw", padx=20, pady=20)
 
 WebDAV_Name_Frame = ttk.Frame(CreateWebDAVAccount_Frame)
 WebDAV_Name_Frame.pack(pady=5)
@@ -1305,78 +1367,79 @@ WebDAV_Path_Frame = ttk.Frame(CreateWebDAVAccount_Frame)
 WebDAV_Path_Frame.pack(pady=5)
 
 WebDAV_Button_Frame = ttk.Frame(CreateWebDAVAccount_Frame)
-WebDAV_Button_Frame.pack(padx=10,pady=10)
+WebDAV_Button_Frame.pack(padx=10, pady=10)
 
 label_WebDAV_Name = ttk.LabelFrame(WebDAV_Name_Frame, text=" 备 注 名 ")
-label_WebDAV_Name.pack(side=ttk.LEFT,padx=5)
+label_WebDAV_Name.pack(side=ttk.LEFT, padx=5)
 
-entry_WebDAV_Name = ttk.Entry(label_WebDAV_Name,width=30)
-entry_WebDAV_Name.pack(padx=10,pady=10)
+entry_WebDAV_Name = ttk.Entry(label_WebDAV_Name, width=30)
+entry_WebDAV_Name.pack(padx=10, pady=10)
 
 label_WebDAV_Path = ttk.LabelFrame(WebDAV_Name_Frame, text=" 相 对 根 目 录 ")
-label_WebDAV_Path.pack(side=ttk.LEFT,padx=5)
+label_WebDAV_Path.pack(side=ttk.LEFT, padx=5)
 
-entry_WebDAV_Path = ttk.Entry(label_WebDAV_Path,width=30)
-entry_WebDAV_Path.pack(padx=10,pady=10)
+entry_WebDAV_Path = ttk.Entry(label_WebDAV_Path, width=30)
+entry_WebDAV_Path.pack(padx=10, pady=10)
 
-WebDAV_Save = ttk.Button(WebDAV_Button_Frame,text="确定",command=CreateWebDAVAccountOnClick)
-WebDAV_Save.pack(side=ttk.LEFT,padx=10,pady=10)
+WebDAV_Save = ttk.Button(WebDAV_Button_Frame, text="确定", command=CreateWebDAVAccountOnClick)
+WebDAV_Save.pack(side=ttk.LEFT, padx=10, pady=10)
 
-WebDAV_Cancel = ttk.Button(WebDAV_Button_Frame,text="取消",bootstyle="outline",command=ExitCreateWebDAVAccount)
-WebDAV_Cancel.pack(side=ttk.LEFT,padx=10,pady=10)
+WebDAV_Cancel = ttk.Button(WebDAV_Button_Frame, text="取消", bootstyle="outline", command=ExitCreateWebDAVAccount)
+WebDAV_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
 # 创建WebDAV账户结束，个人设置页布局开始
 
 Personal_Settings_Frame = ttk.Frame(app)
 
-Personal_Settings_title = ttk.Label(Personal_Settings_Frame,text="个人设置(待开发)",font=(Fonts, 18))
-Personal_Settings_title.pack(anchor="nw",padx=20,pady=20)
+Personal_Settings_title = ttk.Label(Personal_Settings_Frame, text="个人设置(待开发)", font=(Fonts, 18))
+Personal_Settings_title.pack(anchor="nw", padx=20, pady=20)
 
-Personal_Settings_info = ttk.Label(Personal_Settings_Frame,text="个人资料",font=(Fonts, 12))
-Personal_Settings_info.pack(anchor="nw",padx=40)
+Personal_Settings_info = ttk.Label(Personal_Settings_Frame, text="个人资料", font=(Fonts, 12))
+Personal_Settings_info.pack(anchor="nw", padx=40)
 
 Personal_Settings_Button_Frame = ttk.Frame(Personal_Settings_Frame)
-Personal_Settings_Button_Frame.pack(padx=10,pady=10)
+Personal_Settings_Button_Frame.pack(padx=10, pady=10)
 
 Personal_Avatar_Frame = ttk.Frame(Personal_Settings_Frame)
-Personal_Settings_Button_Frame.pack(padx=10,pady=10)
+Personal_Settings_Button_Frame.pack(padx=10, pady=10)
 
 Personal_Avatar_Pic = ttk.Label(Personal_Avatar_Frame)
-Personal_Avatar_Pic.pack(side=ttk.LEFT,padx=10,pady=5)
+Personal_Avatar_Pic.pack(side=ttk.LEFT, padx=10, pady=5)
 
-Personal_Avatar_Name = ttk.Label(Personal_Avatar_Frame,text="头像",font=(Fonts, 10))
-Personal_Avatar_Name.pack(side=ttk.LEFT,padx=10,pady=5)
+Personal_Avatar_Name = ttk.Label(Personal_Avatar_Frame, text="头像", font=(Fonts, 10))
+Personal_Avatar_Name.pack(side=ttk.LEFT, padx=10, pady=5)
 
-Personal_Settings_Save = ttk.Button(Personal_Settings_Button_Frame,text="保存",state="disabled")
-Personal_Settings_Save.pack(side=ttk.LEFT,padx=10,pady=10)
+Personal_Settings_Save = ttk.Button(Personal_Settings_Button_Frame, text="保存", state="disabled")
+Personal_Settings_Save.pack(side=ttk.LEFT, padx=10, pady=10)
 
-Personal_Settings_Cancel = ttk.Button(Personal_Settings_Button_Frame,text="取消",bootstyle="outline",command=Personal_Settings_Back)
-Personal_Settings_Cancel.pack(side=ttk.LEFT,padx=10,pady=10)
+Personal_Settings_Cancel = ttk.Button(Personal_Settings_Button_Frame, text="取消", bootstyle="outline",
+                                      command=Personal_Settings_Back)
+Personal_Settings_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
 # 个人设置页布局结束，App设置页布局开始
 
 AppSettings_Frame = ttk.Frame(app)
 
-AppSettings_title = ttk.Label(AppSettings_Frame,text="APP 设置 (不懂请勿修改)",font=(Fonts, 18))
-AppSettings_title.pack(anchor='nw',padx=20,pady=20)
+AppSettings_title = ttk.Label(AppSettings_Frame, text="APP 设置 (不懂请勿修改)", font=(Fonts, 18))
+AppSettings_title.pack(anchor='nw', padx=20, pady=20)
 
-APPSettingstextbox = ttk.ScrolledText(AppSettings_Frame,font=("Consolas",10))
-APPSettingstextbox.pack(fill=ttk.BOTH,expand=True)
+APPSettingstextbox = ttk.ScrolledText(AppSettings_Frame, font=("Consolas", 10))
+APPSettingstextbox.pack(fill=ttk.BOTH, expand=True)
 
 AppSettings_Button_Frame = ttk.Frame(AppSettings_Frame)
-AppSettings_Button_Frame.pack(side=ttk.BOTTOM,anchor="se",padx=20,pady=20)
+AppSettings_Button_Frame.pack(side=ttk.BOTTOM, anchor="se", padx=20, pady=20)
 
-AppSettings_Save_button = ttk.Button(AppSettings_title,text="保存",state='disabled',command=AppSettings_Save)
-AppSettings_Save_button.pack(side=ttk.RIGHT,padx=10,ipadx=20)
+AppSettings_Save_button = ttk.Button(AppSettings_title, text="保存", state='disabled', command=AppSettings_Save)
+AppSettings_Save_button.pack(side=ttk.RIGHT, padx=10, ipadx=20)
 
-AppSettings_Cancel_button = ttk.Button(AppSettings_title,text="取消",bootstyle='outline',command=AppSettings_Back)
-AppSettings_Cancel_button.pack(side=ttk.RIGHT,padx=10,ipadx=20)
+AppSettings_Cancel_button = ttk.Button(AppSettings_title, text="取消", bootstyle='outline', command=AppSettings_Back)
+AppSettings_Cancel_button.pack(side=ttk.RIGHT, padx=10, ipadx=20)
 
 # App设置页布局结束,管理面板页布局开始
 Manage_Panel_Frame = ttk.Frame(app)
 
-Manage_Panel_title = ttk.Label(Manage_Panel_Frame,text="管理面板(待开发)",font=(Fonts, 18))
-Manage_Panel_title.pack(anchor="nw",padx=20,pady=20)
+Manage_Panel_title = ttk.Label(Manage_Panel_Frame, text="管理面板(待开发)", font=(Fonts, 18))
+Manage_Panel_title.pack(anchor="nw", padx=20, pady=20)
 
 # APP布局结束
 

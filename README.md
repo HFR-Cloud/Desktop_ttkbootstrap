@@ -27,7 +27,7 @@
 需要在程序根目录新建文件`config.ini`。示例内容如下：
 ```
 [account]
-url = http://localhost:5212         ;这里填写服务端的地址，若为ip访问，HeyCloud默认使用0703端口，Cloudreve默认使用5212端口；填写你需要接入的地址，结尾不需要加“/”
+url = http://localhost:5212         ;这里填写服务端的地址，若为ip访问，HeyCloud默认使用7030端口，Cloudreve默认使用5212端口；填写你需要接入的地址，结尾不需要加“/”
 username = admin@yuxiaoqiu.cn       ;这里填写你的邮箱，程序会保存这个邮箱并在启动时自动填充
 id = AqbS                           ;用户ID
 nickname = Cloudreve                ;用户名
@@ -53,16 +53,13 @@ Windows:
 Linux:
 使用`python3 GUI_Launcher.py`即可启动
 
-## 开源许可
-基于以下许可证，本程序闭源。
+## 开源许可 & 杂谈
+本来我并不想开源这个项目的（因为之前我的项目开源之后被别人申请著作权以后返回来告我抄袭，加之这个项目也是自己很久做出来的心血），现在想通了，所以采用**GPL v3**进行开源。但是你也可以赞助我，感谢您的投喂！感谢您的star！
+
+## 小广告
+- 如果你有自己的网站，请请将你的网站名称、网站描述与网站头像地址（注意是地址，否则会被cloudflare打回）发送给`admin@yuxiaoqiu.cn`，并提前在你的网站友链区域填上我的网站信息，我会尽快使用邮件回复：
 ```
-ttkbootstrap   开源许可:MIT
-tkinter        开源许可:Python Software Foundation License
-Pillow         开源许可:Python Imaging Library License
-Python         开源许可:Python Software Foundation License
-requests       开源许可:Apache License 2.0
-windnd         开源许可:MIT
-pyotp          开源许可:MIT
-Python         开源许可:Python Software Foundation License
-pyperclip      开源许可:MIT
+网站名称：海枫筑梦计划
+网站地址：https://yuxiaoqiu.cn
+头像地址：https://img2.imgtp.com/2024/05/01/6GBVrmz2.jpg
 ```
