@@ -4,13 +4,17 @@
 # 本程序因开发者个人原因闭源，未经授权禁止任何形式的二次开发与分发
 
 # 填充程序信息
-App_Version = "0.1.9"
+App_Version = "0.1.9.1 Dev"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：",
          "captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
 zh_TW = {"login": "登錄", "username": "用戶名：", "password": "密    碼：", "captcha": "驗證碼：", "OTP": "OTP驗證碼"}
 en_US = {"login": "Login", "username": "Username", "password": "Password", "captcha": "Captcha", "OTP": "OTP Code"}
+
+# 填充请求API信息
+HFRCloud_API = {'loginout': '/api/user/session', 'storage': '/api/user/storage', 'dir': '/api/v3/directory'}
+Cloudreve_API = {'loginout': '/api/v3/user/session', 'storage': '/api/v3/user/storage', 'dir': '/api/v3/directory'}
 
 # 导入必要库
 import ttkbootstrap as ttk  # ttkbootstrap   开源许可:MIT
@@ -663,7 +667,6 @@ def UploadFile():
             file_path = file_path[i]
             file_name = os.path.basename(file_path)
             file_size = os.path.getsize(file_path)
-            file_size = convert_size(file_size)
             UploadFile_URL_Require = URL + '/api/v3/file/upload'
             data = {
                 'path': RealAddress,
@@ -675,8 +678,20 @@ def UploadFile():
             session.keep_alive = False
             session.cookies = ReadCookies()
             response = session.put(UploadFile_URL_Require, data=json.dumps(data))
-            print(response.text)
-
+            print(response.json())
+            sessionID = response.json()['data']['sessionID']
+            chunk_size = response.json()['data']['chunkSize']
+            UploadFile_URL = URL + '/api/v3/file/upload/' + sessionID + '/'
+            chunk_no = 0
+            with open(file_path, 'rb') as f:
+                for chunk_file in range(0, file_size, chunk_size):
+                    chunk = f.read(chunk_size)
+                
+                    UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
+                    print("准备上传分片",chunk_file,"地址：",UploadFile_URL_Now)
+                    response = session.post(UploadFile_URL_Now, data=chunk)
+                    if response.json()['code'] == 0:
+                        print('分片',chunk_file,'上传成功')
 
 # 下载文件事件
 def DownloadFile():
