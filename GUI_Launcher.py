@@ -4,7 +4,7 @@
 # 本程序因开发者个人原因闭源，未经授权禁止任何形式的二次开发与分发
 
 # 填充程序信息
-App_Version = "0.1.9.1 Dev"
+App_Version = "0.1.9.2 Dev"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：",
@@ -679,19 +679,25 @@ def UploadFile():
             session.cookies = ReadCookies()
             response = session.put(UploadFile_URL_Require, data=json.dumps(data))
             print(response.json())
-            sessionID = response.json()['data']['sessionID']
-            chunk_size = response.json()['data']['chunkSize']
-            UploadFile_URL = URL + '/api/v3/file/upload/' + sessionID + '/'
-            chunk_no = 0
-            with open(file_path, 'rb') as f:
-                for chunk_file in range(0, file_size, chunk_size):
-                    chunk = f.read(chunk_size)
-                
-                    UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
-                    print("准备上传分片",chunk_file,"地址：",UploadFile_URL_Now)
-                    response = session.post(UploadFile_URL_Now, data=chunk)
-                    if response.json()['code'] == 0:
-                        print('分片',chunk_file,'上传成功')
+            try:
+                sessionID = response.json()['data']['sessionID']
+                chunk_size = response.json()['data']['chunkSize']
+                UploadFile_URL = URL + '/api/v3/file/upload/' + sessionID + '/'
+                with open(file_path, 'rb') as f:
+                    chunk_no = 0
+                    for chunk_file in range(0, file_size, chunk_size):
+                        chunk = f.read(chunk_size)
+                    
+                        UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
+                        print("准备上传",file_name,"的分片",chunk_no)
+                        response = session.post(UploadFile_URL_Now, data=chunk)
+                        if response.json()['code'] == 0:
+                            print('分片',chunk_file,'上传成功')
+                        else:
+                            print('分片',chunk_file,'上传失败，错误：',response.json())
+                        chunk_no += 1
+            except:
+                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
 
 # 下载文件事件
 def DownloadFile():
