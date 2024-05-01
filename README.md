@@ -1,7 +1,8 @@
 <p align = "center">
 <br><br>
 <h1><center>HeyCloud Desktop</center></h1>
-原名Cloudreve Desktop，一个基于Tkinter的可跨平台的海枫云存储客户端，兼容Cloudreve V3，并使用ttkbootstrap库进行美化<br><br>
+原名Cloudreve Desktop，一个基于Tkinter的可跨平台的海枫云存储客户端，兼容Cloudreve V3，并使用ttkbootstrap库进行美化
+<br><br>
 
 ## 目前已经实现的功能
 - 登录 & 注销
@@ -13,15 +14,18 @@
 - 文件预览 / 下载
 - WebDAV列表
 - 新建WebDAV账户
+- 小文件上传 （Alpha测试）
+
+## 目前存在的Bug
+- 文件列表选中后，将无法再触发未选择时的右键菜单 解决办法：地址栏回车刷新
 
 ## 目前未实现但严重影响体验的功能
-- 文件上传(因为技术原因本人实在无法完成)
 - 无法登录需要谷歌与腾讯验证码的 HeyCloud / Cloudreve
 - 账号与Cookies为明文保存
 
 ## 兼容的 HeyCloud / Cloudreve 版本
 - HeyCloud：V0.0.x
-- Cloudreve：V3.8.x `推荐V3.8.3`
+- Cloudreve：V3 `推荐：3.8.4 Pro 因为本人基于此版本开发，使用早期版本可能出现问题`
 
 ## 程序配置设置
 需要在程序根目录新建文件`config.ini`。示例内容如下：
