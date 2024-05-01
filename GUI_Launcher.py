@@ -3,16 +3,12 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.9.3 Dev"
+App_Version = "0.1.9.4 Dev"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
 zh_TW = {"login": "登錄", "username": "用戶名：", "password": "密    碼：", "captcha": "驗證碼：", "OTP": "OTP驗證碼"}
 en_US = {"login": "Login", "username": "Username", "password": "Password", "captcha": "Captcha", "OTP": "OTP Code"}
-
-# 填充请求API信息
-HFRCloud_API = {'loginout': '/api/user/session', 'storage': '/api/user/storage', 'dir': '/api/v3/directory'}
-Cloudreve_API = {'loginout': '/api/v3/user/session', 'storage': '/api/v3/user/storage', 'dir': '/api/v3/directory'}
 
 # 导入必要库
 import ttkbootstrap as ttk              # ttkbootstrap   开源许可:MIT
@@ -662,13 +658,17 @@ def Dragged_Files(files):
     msg = '您拖放的文件：\n' + msg
     dialogs.Messagebox.show_info(message=msg)
 
-
 # 上传到本地存储事件
-def UploadFile():
+def UploadLocalFile():
+    # 创建一个新的线程来执行文件上传的任务
+    upload_thread = threading.Thread(target=UploadFileLocalThread)
+    upload_thread.start()
+
+def UploadFileLocalThread():
     file_Path = filedialog.askopenfilenames()
     if file_Path != '':
         FileNumber = len(file_Path)
-        print('共选择了', FileNumber, '个文件:', file_Path)
+        print('共选择了', FileNumber, '个文件\n准备上传')
         # 循环获取文件路径、大小、名字
         for i in range(FileNumber):
             file_path = file_Path[i]
@@ -695,22 +695,24 @@ def UploadFile():
                         chunk = f.read(chunk_size)
                     
                         UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
-                        print("准备上传",file_name,"的分片",chunk_no)
+                        print("准备上传文件",file_name,"的第",chunk_no,"个分片")
                         response = session.post(UploadFile_URL_Now, data=chunk)
                         if response.json()['code'] == 0:
-                            print('分片',chunk_file,'上传成功')
+                            print(file_name, '的第', chunk_no, '个分片上传成功')
                         else:
                             print('分片',chunk_file,'上传失败，错误：',response.json())
                         chunk_no += 1
                     print("文件",file_name,'上传成功')
-                print("文件全部上传完成")
             except:
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+    print("文件全部上传完成")
+    GetDirList('/')
 
 # 下载文件事件
 def DownloadFile():
     select_ID = fileList.focus()
     selected_item_values = fileList.item(select_ID)['values']
+    print(selected_item_values)
     fileID = selected_item_values[4]
     Download_Require = URL + '/api/v3/file/download/' + fileID
     cookies = ReadCookies()
@@ -1204,7 +1206,7 @@ FileMenu.add_command(label="🖼️图片", font=(Fonts, 10), command=SearchImag
 FileMenu.add_command(label="🎵      音乐", font=(Fonts, 10), command=SearchAudio)  # /api/v3/file/search/audio/internal
 FileMenu.add_command(label="📄      文档", font=(Fonts, 10), command=SearchDoc)  # /api/v3/file/search/doc/internal
 FileMenu.add_separator()
-FileMenu.add_command(label='上传文件', font=(Fonts, 10), command=UploadFile)
+FileMenu.add_command(label='上传文件', font=(Fonts, 10), command=UploadLocalFile)
 FileMenu.add_command(label='传输队列', font=(Fonts, 10))
 FileMenu.add_separator()
 FileMenu.add_command(label='连接与挂载', font=(Fonts, 10), command=WebDAVPage)

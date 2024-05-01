@@ -1,5 +1,5 @@
 <p align = "center">
-<h1><center>HeyCloud Desktop</center></h1>
+<h1><center>HFR-Cloud Desktop</center></h1>
 原名Cloudreve Desktop，一个基于Tkinter的可跨平台的海枫云存储客户端，兼容Cloudreve V3，并使用ttkBootstrap库进行美化
 <br><br>
 
@@ -19,18 +19,19 @@
 - 文件列表选中后，将无法再触发未选择时的右键菜单 解决办法：地址栏回车刷新
 
 ## 目前未实现但严重影响体验的功能
-- 无法登录需要谷歌与腾讯验证码的 HeyCloud / Cloudreve
+- 显示比例在100%-125%体验为佳（未适配高分屏）
+- 无法登录需要谷歌与腾讯验证码的 HFR-Cloud / Cloudreve
 - 账号与Cookies为明文保存
 
-## 兼容的 HeyCloud / Cloudreve 版本
-- HeyCloud：V0.0.x
+## 兼容的 HFR-Cloud / Cloudreve 版本
+- HFR-Cloud：V0.0.x
 - Cloudreve：V3 `推荐：3.8.4 Pro 因为本人基于此版本开发，使用早期版本可能出现问题`
 
 ## 程序配置设置
 需要在程序根目录新建文件`config.ini`。示例内容如下：
 ```
 [account]
-url = http://localhost:5212         ;这里填写服务端的地址，若为ip访问，HeyCloud默认使用7030端口，Cloudreve默认使用5212端口；填写你需要接入的地址，结尾不需要加“/”
+url = http://localhost:5212         ;这里填写服务端的地址，若为ip访问，HFR-Cloud默认使用7030端口，Cloudreve默认使用5212端口；填写你需要接入的地址，结尾不需要加“/”
 username = admin@yuxiaoqiu.cn       ;这里填写你的邮箱，程序会保存这个邮箱并在启动时自动填充
 id = AqbS                           ;用户ID
 nickname = Cloudreve                ;用户名
