@@ -31,6 +31,8 @@ import io                               # Python         开源许可:Python Sof
 import pyperclip                        # pyperclip      开源许可:MIT
 from configparser import ConfigParser   # Python         开源许可:Python Software Foundation License
 import ctypes                           # Python         开源许可:Python Software Foundation License
+import time
+from tqdm import tqdm                   # tqdm           开源许可:MIT
 
 # 资源文件目录访问
 def source_path(relative_path):
@@ -668,7 +670,7 @@ def UploadFileLocalThread():
     file_Path = filedialog.askopenfilenames()
     if file_Path != '':
         FileNumber = len(file_Path)
-        print('共选择了', FileNumber, '个文件\n准备上传')
+        print('共选择了', FileNumber, '个文件，准备上传')
         # 循环获取文件路径、大小、名字
         for i in range(FileNumber):
             file_path = file_Path[i]
@@ -680,29 +682,54 @@ def UploadFileLocalThread():
                 'policy_id': Policy_ID,
                 'size': file_size,
                 'name': file_name
-            }
+             }
             session = requests.Session()
             session.keep_alive = False
             session.cookies = ReadCookies()
             response = session.put(UploadFile_URL_Require, data=json.dumps(data))
+            print(response.text)
+            sessionID = response.json()['data']['sessionID']
+            chunk_size = response.json()['data']['chunkSize']
             try:
-                sessionID = response.json()['data']['sessionID']
-                chunk_size = response.json()['data']['chunkSize']
+                Upload_URL = response.json()['data']['uploadURLs'][0]
+                print('非本地文件上传，识别上传地址中……')
+                IsSharePoint = "sharepoint.com" in Upload_URL
+                if IsSharePoint == True:
+                    print("识别成功，上传策略为SharePoint")
+                    Upload_Type = 'onedrive'
+                    UploadFile_URL = Upload_URL
+            except:
+                print("本地策略上传")
+                Upload_Type = 'local'
                 UploadFile_URL = URL + '/api/v3/file/upload/' + sessionID + '/'
+            try:
                 with open(file_path, 'rb') as f:
                     chunk_no = 0
                     for chunk_file in range(0, file_size, chunk_size):
                         chunk = f.read(chunk_size)
-                    
-                        UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
+
+                        if Upload_Type == "local":
+                            UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
+                        elif Upload_Type == "onedrive":
+                            UploadFile_URL_Now = UploadFile_URL
                         print("准备上传文件",file_name,"的第",chunk_no,"个分片")
-                        response = session.post(UploadFile_URL_Now, data=chunk)
+                        if Upload_Type == 'local':
+                            response = session.post(UploadFile_URL_Now, data=chunk)
+                        elif Upload_Type == 'onedrive':
+                            response = session.put(UploadFile_URL_Now, data=chunk)
+                        print(response.text)
                         if response.json()['code'] == 0:
                             print(file_name, '的第', chunk_no, '个分片上传成功')
                         else:
                             print('分片',chunk_file,'上传失败，错误：',response.json())
                         chunk_no += 1
-                    print("文件",file_name,'上传成功')
+                    if Upload_Type == "local":
+                        print("文件",file_name,'上传成功')
+                    elif Upload_Type == "onedrive":
+                        print('文件已上传到SharePoint，等待服务端处理……')
+                        continueUpload_url = URL + '/api/v3/callback/ondrive/finish/' + sessionID
+                        response = requests.post(url=continueUpload_url,cookies=ReadCookies)
+                        print(response.text)
             except:
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
     print("文件全部上传完成")
@@ -726,6 +753,7 @@ def DownloadFile():
     else:
         Download_URL = response.json()['data']
     webbrowser.open(Download_URL)
+
 
 # 刷新用户容量函数
 def RefrushStorage():
@@ -1350,10 +1378,14 @@ ConnectMobileFrame = ttk.Frame(app)
 ConnectMobile_title = ttk.Label(ConnectMobileFrame, text="iOS 客户端", font=(Fonts, 18))
 ConnectMobile_title.pack(side=ttk.LEFT, padx=20, pady=20)
 
-ConnectMobile_Label = ttk.Label(ConnectMobileFrame,
-                                text="请在App Store下载“Cloudreve”应用程序，然后打开应用，并扫面以下二维码：",
-                                font=(Fonts, 12))
+ConnectMobile_Label = ttk.Label(ConnectMobileFrame, text="请在App Store下载“Cloudreve”应用程序，然后打开应用，并扫描以下二维码：", font=(Fonts, 12))
 ConnectMobile_Label.pack(anchor="nw", padx=40)
+
+ConnectMobile_QRCode = ttk.Label(ConnectMobileFrame)
+ConnectMobile_QRCode.pack(anchor="nw", padx=40, pady=20)
+
+ConnectMobile_Cancel = ttk.Button(ConnectMobileFrame, text="完成", command=WebDAVPage_Back)
+ConnectMobile_Cancel.pack(side=ttk.RIGHT, padx=20, ipadx=20)
 
 # iOS客户端连接页面结束，创建WebDAV账户开始
 
