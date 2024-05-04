@@ -13,6 +13,7 @@
 - 文件预览 / 下载
 - WebDAV列表
 - 新建WebDAV账户
+- iOS版 Cloudreve 扫码
 - 本地策略文件上传
 
 ## 目前存在的Bug
@@ -45,6 +46,7 @@ allowwebdavproxy = False            ;是否允许webdav代理
 
 [settings]
 theme = light                       ;程序主题，可自行填写light或者dark
+fonts = 思源黑体                    ;程序字体，推荐思源黑体，留空会检测系统是否安装思源黑体，有则使用无则宋体(Windows)或者苹方(macOS)
 ```
 
 如果是本地调试，则无需新建`config.ini`，程序会自动为url填充http://localhost:5212
@@ -54,8 +56,23 @@ theme = light                       ;程序主题，可自行填写light或者da
 安装相关依赖：
 > pip install -r requirements.txt
 
+安装思源黑体（可选，推荐）
+> https://github.com/adobe-fonts/source-han-sans/releases/download/2.004R/SourceHanSansSC.zip
+
 启动程序：
 > python GUI_Launcher.py
+
+## 打包成可执行文件
+
+**重要提示：打包前请务必删除**`Cookies.txt`**，并删除**`config.ini`**中[account]字段，否则您的个人信息将会随之一起被打包！**
+
+打包前请先安装Pyinstaller模块：
+>pip install pyinstaller
+
+然后在项目根目录执行：
+>pyinstaller GUI_Launcher.spec
+
+最终可执行文件将会出现在/dist目录中
 
 ## 开源许可 & 杂谈
 本来我并不想开源这个项目的（因为之前我的项目开源之后被别人申请著作权以后返回来告我抄袭，加之这个项目也是自己很久做出来的心血），现在想通了，所以采用**GPL v3**进行开源。但是你也可以赞助我，感谢您的投喂！感谢您的star！

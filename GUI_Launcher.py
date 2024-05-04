@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.9.4 Dev"
+App_Version = "0.1.9.6 Dev"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -31,8 +31,7 @@ import io                               # Python         开源许可:Python Sof
 import pyperclip                        # pyperclip      开源许可:MIT
 from configparser import ConfigParser   # Python         开源许可:Python Software Foundation License
 import ctypes                           # Python         开源许可:Python Software Foundation License
-import time
-from tqdm import tqdm                   # tqdm           开源许可:MIT
+import qrcode                           # qrcode         开源许可:MIT
 
 # 资源文件目录访问
 def source_path(relative_path):
@@ -76,7 +75,7 @@ try:
 except:
     locales = zh_CN
 
-# 设置配置文件中目标Cloudreve的地址，没有则默认连接本机Cloudreve
+# 设置配置文件中目标HeyCloud / Cloudreve的地址，没有则默认连接本机Cloudreve
 try:
     URL = config['account']['url']
 except:
@@ -507,7 +506,7 @@ def LeftKeyOnclick(event):
     for item in selected_items:
         fileList.selection_remove(item)
 
-
+# 处理右键打开文件事件
 def RightKeyClickOpenFile():
     filelistonclick(event='')
 
@@ -1052,13 +1051,52 @@ def CopyWebDAVPassword():
 
 # 处理连接iOS客户端事件
 def MobileConnect():
-    print('TODO:连接iOS客户端')
+    WebDAV_Settings_Frame.pack_forget()
+    ConnectMobileFrame.pack(fill=BOTH, expand=YES)
+    threading.Thread(target=generate_qr_code).start()
+
+# 生成手机端能扫描的QRCode
+def generate_qr_code():
+    QRCode_require_URL = URL + '/api/v3/user/session'
+    cookies = ReadCookies()
+    session = requests.Session()
+    session.keep_alive = False
+    session.cookies = cookies
+    response = session.get(QRCode_require_URL)
+    status_code = response.json()['code']
+    if status_code == 0:
+        QRCode = response.json()['data']
+        # 生成二维码
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=5,
+            border=4,
+        )
+        qr.add_data(QRCode)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill='black', back_color='white')
+
+        # 将PIL图像转换为Tkinter可以显示的图片
+        tk_img = ImageTk.PhotoImage(img)
+
+        # 显示二维码
+        ConnectMobile_QRCode.config(image=tk_img)
+        ConnectMobile_QRCode.image = tk_img  # 需要保持对图片的引用，否则图片会被垃圾回收
+    else:
+        dialogs.Messagebox.show_error(message='未知错误：\n' + response.text)
 
 # 从WebDAV返回到文件列表页
 def WebDAVPage_Back():
     app.title(RealAddress + " - " + Cloud_name)
     WebDAV_Settings_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
+
+# 从连接手机端返回到WebDAV页面
+def ConnectMobile_Back():
+    ConnectMobileFrame.pack_forget()
+    WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
 
 # 个人设置页面
 def Personal_Settings():
@@ -1105,7 +1143,7 @@ def ExitAPP():
 """
 
 app = ttk.Window(title='HFR-Cloud Desktop')
-app.geometry("300x200")
+app.geometry("350x200")
 app.place_window_center()
 app.attributes('-alpha', 0.9)  # 设置窗口半透明
 app.protocol("WM_TAKE_FOCUS", ScanShareURL)
@@ -1376,7 +1414,7 @@ WebDAV_Menu.add_command(label="删除")
 ConnectMobileFrame = ttk.Frame(app)
 
 ConnectMobile_title = ttk.Label(ConnectMobileFrame, text="iOS 客户端", font=(Fonts, 18))
-ConnectMobile_title.pack(side=ttk.LEFT, padx=20, pady=20)
+ConnectMobile_title.pack(anchor='nw', padx=20, pady=20)
 
 ConnectMobile_Label = ttk.Label(ConnectMobileFrame, text="请在App Store下载“Cloudreve”应用程序，然后打开应用，并扫描以下二维码：", font=(Fonts, 12))
 ConnectMobile_Label.pack(anchor="nw", padx=40)
@@ -1384,8 +1422,8 @@ ConnectMobile_Label.pack(anchor="nw", padx=40)
 ConnectMobile_QRCode = ttk.Label(ConnectMobileFrame)
 ConnectMobile_QRCode.pack(anchor="nw", padx=40, pady=20)
 
-ConnectMobile_Cancel = ttk.Button(ConnectMobileFrame, text="完成", command=WebDAVPage_Back)
-ConnectMobile_Cancel.pack(side=ttk.RIGHT, padx=20, ipadx=20)
+ConnectMobile_Cancel = ttk.Button(ConnectMobileFrame, text="完成", command=ConnectMobile_Back)
+ConnectMobile_Cancel.pack(side=ttk.RIGHT, padx=30, pady=30, ipadx=20)
 
 # iOS客户端连接页面结束，创建WebDAV账户开始
 
