@@ -128,8 +128,8 @@ try:
             dialogs.Messagebox.show_error(message='暂不支持登录腾讯云验证码的服务端')
             sys.exit()
     # Cloud_Version = requests.get(URL + "/api/v3/site/ping").json()['data']
-except:
-    dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端')
+except Exception as e:
+    dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端，错误原因：' + str(e))
     sys.exit()
 
 # 初始化软件服务
