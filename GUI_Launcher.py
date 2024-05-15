@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.9.6 Dev"
+App_Version = "0.1.9.7 Dev"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -706,6 +706,7 @@ def UploadFileLocalThread():
                     chunk_no = 0
                     for chunk_file in range(0, file_size, chunk_size):
                         chunk = f.read(chunk_size)
+                        end = min(i + chunk_size, file_size) - 1
 
                         if Upload_Type == "local":
                             UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
@@ -715,7 +716,12 @@ def UploadFileLocalThread():
                         if Upload_Type == 'local':
                             response = session.post(UploadFile_URL_Now, data=chunk)
                         elif Upload_Type == 'onedrive':
-                            response = session.put(UploadFile_URL_Now, data=chunk)
+                            response = session.put(UploadFile_URL_Now, 
+                                                   headers={
+                                                    'Content-Type': 'application/octet-stream',
+                                                    'Content-Range': f'bytes {chunk_file}-{end}/{file_size}',
+                                                            },
+                                                       data=chunk)
                         print(response.text)
                         if response.json()['code'] == 0:
                             print(file_name, '的第', chunk_no, '个分片上传成功')
@@ -730,7 +736,7 @@ def UploadFileLocalThread():
                         response = requests.post(url=continueUpload_url,cookies=ReadCookies)
                         print(response.text)
             except:
-                dialogs.Messagebox.show_error(message='未知错误：' + response.text)
+                print(response.text)
     print("文件全部上传完成")
     GetDirList('/')
 

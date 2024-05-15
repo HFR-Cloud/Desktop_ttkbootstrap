@@ -70,9 +70,12 @@ fonts = 思源黑体                    ;程序字体，推荐思源黑体，留
 >pip install pyinstaller
 
 然后在项目根目录执行：
->pyinstaller GUI_Launcher.spec
+>pyinstaller build.spec
 
 最终可执行文件将会出现在/dist目录中
+
+## 赞助本项目
+- 您可以在 `https://afdian.net/a/yuerchu` 赞助本项目。
 
 ## 升级到捐助版
 开始着手这个项目时，我学Python并没有多久，现在回过头来看这个项目已经让我看不上了。所以我对这个代码进行了重构，新的程序拥有着更现代化的界面以及更完善的功能更新，它的名字叫做HFR-Cloud Desktop Pro。
