@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.9.8 Dev"
+App_Version = "0.2.0"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -24,7 +24,6 @@ import http.cookiejar                   # Python         开源许可:Python Sof
 import webbrowser                       # Python         开源许可:Python Software Foundation License
 import sys                              # Python         开源许可:Python Software Foundation License
 import threading                        # Python         开源许可:Python Software Foundation License
-import windnd                           # windnd         开源许可:MIT
 import pyotp                            # pyotp          开源许可:MIT
 import base64                           # Python         开源许可:Python Software Foundation License
 import io                               # Python         开源许可:Python Software Foundation License
@@ -94,46 +93,36 @@ try:
 except:
     pass
 
-# 带验证码的登录事件
-def captcha_Login():
-    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
-    cookies = ReadCookies()
-    session = requests.session()
-    session.cookies = cookies
-    session.keep_alive = False
-    response = session.get(CAPTCHA_GET_URL)
-    status_code = response.json()['code']
-    if status_code == 0:
-        base64_string = response.json()['data']
-        prefix = "data:image/png;base64,"
-        base64_string = base64_string[len(prefix):]
-        image_bytes = base64.b64decode(base64_string)
-        image = Image.open(io.BytesIO(image_bytes))
-        captcha_photo = ImageTk.PhotoImage(image)
-        label_captcha_Pic.config(image=captcha_photo)
-        label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
-
-# 获取云盘信息
-try:
-    Cloud_Info = requests.get(URL + "/api/v3/site/config")
-    if Cloud_Info.status_code == 200:
-        Cloud_Info = Cloud_Info.json()
-        Cloud_name = Cloud_Info['data']['title']
-        captcha_Type = Cloud_Info['data']['captcha_type']
-        Login_captcha = Cloud_Info['data']['loginCaptcha']
-        if captcha_Type == 'recaptcha' and Login_captcha == True:
-            dialogs.Messagebox.show_error(message='暂不支持登录reCaptcha的服务端')
-            sys.exit()
-        elif captcha_Type == 'tcaptcha' and Login_captcha == True:
-            dialogs.Messagebox.show_error(message='暂不支持登录腾讯云验证码的服务端')
-            sys.exit()
-    # Cloud_Version = requests.get(URL + "/api/v3/site/ping").json()['data']
-except Exception as e:
-    dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端，错误原因：' + str(e))
-    sys.exit()
+Cloud_name = 'Loading……'
+Login_captcha = False
 
 # 初始化软件服务
 def init():
+    app.place_window_center()
+    global Cloud_name
+    global Login_captcha
+
+    # 获取云盘信息
+    try:
+        Cloud_Info = requests.get(URL + "/api/v3/site/config")
+        if Cloud_Info.status_code == 200:
+            Cloud_Info = Cloud_Info.json()
+            Cloud_name = Cloud_Info['data']['title']
+            LoginAppName = '登录 ' + Cloud_name
+            label_APPNAME.config(text=LoginAppName)
+            captcha_Type = Cloud_Info['data']['captcha_type']
+            Login_captcha = Cloud_Info['data']['loginCaptcha']
+            if captcha_Type == 'recaptcha' and Login_captcha == True:
+                dialogs.Messagebox.show_error(message='暂不支持登录reCaptcha的服务端')
+                sys.exit()
+            elif captcha_Type == 'tcaptcha' and Login_captcha == True:
+                dialogs.Messagebox.show_error(message='暂不支持登录腾讯云验证码的服务端')
+                sys.exit()
+        # Cloud_Version = requests.get(URL + "/api/v3/site/ping").json()['data']
+    except Exception as e:
+        dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端，错误原因：' + str(e))
+        sys.exit()
+
     # 自动登录
     entry_username.config(state='disabled')
     entry_password.config(state='disabled')
@@ -185,6 +174,25 @@ def SignUP():
 def forgetPassword():
     forget_URL = URL + "/forget"
     webbrowser.open(forget_URL)
+
+# 带验证码的登录事件
+def captcha_Login():
+    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
+    cookies = ReadCookies()
+    session = requests.session()
+    session.cookies = cookies
+    session.keep_alive = False
+    response = session.get(CAPTCHA_GET_URL)
+    status_code = response.json()['code']
+    if status_code == 0:
+        base64_string = response.json()['data']
+        prefix = "data:image/png;base64,"
+        base64_string = base64_string[len(prefix):]
+        image_bytes = base64.b64decode(base64_string)
+        image = Image.open(io.BytesIO(image_bytes))
+        captcha_photo = ImageTk.PhotoImage(image)
+        label_captcha_Pic.config(image=captcha_photo)
+        label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
 
 # 登录成功后执行
 def SuccessLogin(response, WhenStart=False):
@@ -652,21 +660,16 @@ def ListNewDir(event):
     else:
         SearchFile(Address)
 
-
-# 处理文件拖入窗口上传事件
-def Dragged_Files(files):
-    msg = '\n'.join((item.decode('utf-8') for item in files))
-    msg = '您拖放的文件：\n' + msg
-    dialogs.Messagebox.show_info(message=msg)
-
-# 上传到本地存储事件
+# 上传到本地存储/Onedrive事件
 def UploadLocalFile():
     # 创建一个新的线程来执行文件上传的任务
+    dialogs.Messagebox.show_info(message='目前传输队列不可用，请在终端查看上传详情，传输完成后自动刷新上传列表\n若本程序已经打包成可执行文件，则暂时无法显示上传进度')
     upload_thread = threading.Thread(target=UploadFileLocalThread)
     upload_thread.start()
 
 def UploadFileLocalThread():
     file_Path = filedialog.askopenfilenames()
+    print(file_Path)
     if file_Path != '':
         FileNumber = len(file_Path)
         print('共选择了', FileNumber, '个文件，准备上传')
@@ -740,7 +743,6 @@ def UploadFileLocalThread():
                     Callbacker = session.post(CallbackURL, json={})
                 except Exception as e:
                     print("上传失败，错误：", e)
-    print("上传队列已完成")
     GetDirList(RealAddress)
 
 # 下载文件事件
@@ -1096,26 +1098,19 @@ def generate_qr_code():
     else:
         dialogs.Messagebox.show_error(message='未知错误：\n' + response.text)
 
-# 从WebDAV返回到文件列表页
-def WebDAVPage_Back():
-    app.title(RealAddress + " - " + Cloud_name)
-    WebDAV_Settings_Frame.pack_forget()
-    Home_Frame.pack(fill=BOTH, expand=YES)
-
 # 从连接手机端返回到WebDAV页面
 def ConnectMobile_Back():
     ConnectMobileFrame.pack_forget()
     WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
 
+def TransferList():
+    Home_Frame.pack_forget()
+    Transfer_List_Frame.pack(fill=BOTH, expand=YES)
+
 # 个人设置页面
 def Personal_Settings():
     Home_Frame.pack_forget()
     Personal_Settings_Frame.pack(fill=BOTH, expand=YES)
-
-# 从个人设置返回到文件列表页
-def Personal_Settings_Back():
-    Personal_Settings_Frame.pack_forget()
-    Home_Frame.pack(fill=BOTH, expand=YES)
 
 # APP设置启动
 def AppSettings():
@@ -1130,16 +1125,21 @@ def AppSettings_Save():
     config.write(APPSettingstextbox.get(1.0, END))
     config.close()
     dialogs.Messagebox.show_info(message='保存成功')
-    AppSettings_Back()
+    BackToHome()
 
-# App设置返回
-def AppSettings_Back():
+def About():
+    Home_Frame.pack_forget()
+    About_Frame.pack(fill=BOTH, expand=YES)
+
+def BackToHome():
+    WebDAV_Settings_Frame.pack_forget()
+    Personal_Settings_Frame.pack_forget()
+    FilePreview_Frame.pack_forget()
     AppSettings_Frame.pack_forget()
+    Transfer_List_Frame.pack_forget()
+    About_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
-
-# 程序获得焦点时读取剪切板，并查询是否为目标服务器的分享链接，如果是则提醒用户是否访问
-def ScanShareURL():
-    print(pyperclip.get_clipboard())
+    app.title(RealAddress + " - " + Cloud_name)
 
 # 退出APP执行的内容
 def ExitAPP():
@@ -1155,7 +1155,6 @@ app = ttk.Window(title='HFR-Cloud Desktop')
 app.geometry("350x200")
 app.place_window_center()
 app.attributes('-alpha', 0.9)  # 设置窗口半透明
-app.protocol("WM_TAKE_FOCUS", ScanShareURL)
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
 app.tk.call('tk', 'scaling', ScaleFactor / 75)
 
@@ -1282,7 +1281,7 @@ FileMenu.add_command(label="🎵      音乐", font=(Fonts, 10), command=SearchA
 FileMenu.add_command(label="📄      文档", font=(Fonts, 10), command=SearchDoc)  # /api/v3/file/search/doc/internal
 FileMenu.add_separator()
 FileMenu.add_command(label='上传文件', font=(Fonts, 10), command=UploadLocalFile)
-FileMenu.add_command(label='传输队列', font=(Fonts, 10))
+FileMenu.add_command(label='传输队列', font=(Fonts, 10), command=TransferList)
 FileMenu.add_separator()
 FileMenu.add_command(label='连接与挂载', font=(Fonts, 10), command=WebDAVPage)
 fileMenuButton.config(menu=FileMenu)
@@ -1293,7 +1292,7 @@ UserMenu.add_command(label="APP设置", font=(Fonts, 10), command=AppSettings)
 UserMenu.add_command(label="管理面板", font=(Fonts, 10))
 UserMenu.add_command(label="退出登录", font=(Fonts, 10), command=LogOut)
 UserMenu.add_separator()
-UserMenu.add_command(label="关于 HeyCloud Desktop", font=(Fonts, 10))
+UserMenu.add_command(label="关于 HeyCloud Desktop", font=(Fonts, 10), command=About)
 accountInfo.config(menu=UserMenu)
 
 fileListFrame = ttk.Frame(Home_Frame)
@@ -1321,7 +1320,6 @@ fileList.pack(side=ttk.LEFT, fill=ttk.BOTH, expand=True)
 fileList.bind("<Button-1>", LeftKeyOnclick)
 fileList.bind("<Double-Button-1>", filelistonclick)
 fileList.bind("<Button-3>", filelistonrightclick)
-windnd.hook_dropfiles(fileList, func=Dragged_Files)
 scrollbar.config(command=fileList.yview)
 
 fileList_Menu_No_Select = ttk.Menu(app)
@@ -1391,7 +1389,7 @@ WebDAV_Title_Frame.pack(anchor='n', fill=ttk.X)
 WebDAV_title = ttk.Label(WebDAV_Title_Frame, text="连接", font=(Fonts, 18))
 WebDAV_title.pack(side=ttk.LEFT, padx=20, pady=20)
 
-WebDAV_Cancel_button = ttk.Button(WebDAV_Title_Frame, text="取消", bootstyle='outline', command=WebDAVPage_Back)
+WebDAV_Cancel_button = ttk.Button(WebDAV_Title_Frame, text="取消", bootstyle='outline', command=BackToHome)
 WebDAV_Cancel_button.pack(side=ttk.RIGHT, padx=20, ipadx=20)
 
 WebDAV_Add_button = ttk.Button(WebDAV_Title_Frame, text="添加", command=CreateWebDAVAccount)
@@ -1468,7 +1466,33 @@ WebDAV_Save.pack(side=ttk.LEFT, padx=10, pady=10)
 WebDAV_Cancel = ttk.Button(WebDAV_Button_Frame, text="取消", bootstyle="outline", command=ExitCreateWebDAVAccount)
 WebDAV_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
-# 创建WebDAV账户结束，个人设置页布局开始
+# 创建WebDAV账户结束，传输列表页布局开始
+
+Transfer_List_Frame = ttk.Frame(app)
+
+Transfer_List_title = ttk.Label(Transfer_List_Frame, text="传输列表", font=(Fonts, 18))
+Transfer_List_title.pack(anchor="nw", padx=20, pady=20)
+
+Transfer_List = ttk.Treeview(Transfer_List_Frame, columns=["名称", "大小", "类型", "状态", "进度"], show="headings")
+Transfer_List.column("名称", width=200)
+Transfer_List.column("大小", width=50)
+Transfer_List.column("类型", width=50)
+Transfer_List.column("状态", width=50)
+Transfer_List.column("进度", width=50)
+Transfer_List.heading("名称", text="名称")
+Transfer_List.heading("大小", text="大小")
+Transfer_List.heading("类型", text="类型")
+Transfer_List.heading("状态", text="状态")
+Transfer_List.heading("进度", text="进度")
+Transfer_List.pack(fill=ttk.BOTH, expand=True)
+
+Transfer_List_Button_Frame = ttk.Frame(Transfer_List_Frame)
+Transfer_List_Button_Frame.pack(side=ttk.BOTTOM, anchor="se", padx=20, pady=50)
+
+Transfer_List_Done = ttk.Button(Transfer_List_Button_Frame, text="完成", bootstyle="outline")
+Transfer_List_Done.pack(side=ttk.RIGHT, padx=10, ipadx=20, pady=20)
+
+# 传输列表布局结束，个人设置页布局开始
 
 Personal_Settings_Frame = ttk.Frame(app)
 
@@ -1493,8 +1517,7 @@ Personal_Avatar_Name.pack(side=ttk.LEFT, padx=10, pady=5)
 Personal_Settings_Save = ttk.Button(Personal_Settings_Button_Frame, text="保存", state="disabled")
 Personal_Settings_Save.pack(side=ttk.LEFT, padx=10, pady=10)
 
-Personal_Settings_Cancel = ttk.Button(Personal_Settings_Button_Frame, text="取消", bootstyle="outline",
-                                      command=Personal_Settings_Back)
+Personal_Settings_Cancel = ttk.Button(Personal_Settings_Button_Frame, text="取消", bootstyle="outline", command=BackToHome)
 Personal_Settings_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
 # 个人设置页布局结束，App设置页布局开始
@@ -1513,7 +1536,7 @@ AppSettings_Button_Frame.pack(side=ttk.BOTTOM, anchor="se", padx=20, pady=20)
 AppSettings_Save_button = ttk.Button(AppSettings_title, text="保存", state='disabled', command=AppSettings_Save)
 AppSettings_Save_button.pack(side=ttk.RIGHT, padx=10, ipadx=20)
 
-AppSettings_Cancel_button = ttk.Button(AppSettings_title, text="取消", bootstyle='outline', command=AppSettings_Back)
+AppSettings_Cancel_button = ttk.Button(AppSettings_title, text="取消", bootstyle='outline', command=BackToHome)
 AppSettings_Cancel_button.pack(side=ttk.RIGHT, padx=10, ipadx=20)
 
 # App设置页布局结束,管理面板页布局开始
@@ -1532,6 +1555,9 @@ About_title.pack(anchor="nw",padx=20,pady=20)
 About_info = ttk.Label(About_Frame,text="什么是HFR-Cloud Desktop？这是HFR-Cloud的PC端开源客户端，\n支持连接HFR-Cloud，并兼容Cloudreve v3",font=(Fonts, 12))
 About_info.pack(anchor="nw",padx=40)
 
+About_info_Done = ttk.Button(About_Frame, text="完成", bootstyle="outline", command=BackToHome)
+About_info_Done.pack(side=ttk.RIGHT, padx=10, ipadx=20, pady=20)
+
 # APP布局结束
 
 # 程序初始化线程
@@ -1539,5 +1565,4 @@ init_thread = threading.Thread(target=init)
 init_thread.start()
 
 # 程序主循环
-app.place_window_center()
 app.mainloop()

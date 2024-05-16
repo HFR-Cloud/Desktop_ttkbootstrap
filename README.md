@@ -3,6 +3,8 @@
 原名Cloudreve Desktop，一个基于Tkinter的可跨平台的海枫云存储客户端，兼容Cloudreve V3，并使用ttkBootstrap库进行美化
 <br><br>
 
+程序更新日志请翻阅UPDATE.md。
+
 ## 目前已经实现的功能
 - 登录 & 注销
 - 文件夹浏览
@@ -19,12 +21,12 @@
 
 ## 目前存在的Bug
 - 文件列表选中后，将无法再触发未选择时的右键菜单 解决办法：地址栏回车刷新
-- 能够识别上传策略，但是上传到Onedrive报错
 
 ## 目前未实现但严重影响体验的功能
+- 很多功能只做了UI，并没有实现对应功能（所以是功能补全版）
 - 显示比例在100%-125%体验为佳（未适配高分屏）
 - 无法登录需要谷歌与腾讯验证码的 HFR-Cloud / Cloudreve
-- 账号与Cookies为明文保存
+- 账号（不包括密码）与Cookies为明文保存
 
 ## 兼容的 HFR-Cloud / Cloudreve 版本
 - HFR-Cloud：V0.0.x
@@ -35,7 +37,7 @@
 ```
 [account]
 url = http://localhost:5212         ;这里填写服务端的地址，若为ip访问，HFR-Cloud默认使用7030端口，Cloudreve默认使用5212端口；填写你需要接入的地址，结尾不需要加“/”
-username = admin@yuxiaoqiu.cn       ;这里填写你的邮箱，程序会保存这个邮箱并在启动时自动填充
+username = admin@yuxiaoqiu.cn       ;这里选填邮箱，自动登录失败时会自动将此邮箱填入输入框
 id = AqbS                           ;用户ID
 nickname = Cloudreve                ;用户名
 groupname = Admin                   ;头衔（在Cloudreve被称为用户组名称）
@@ -50,7 +52,7 @@ theme = light                       ;程序主题，可自行填写light或者da
 fonts = 思源黑体                    ;程序字体，推荐思源黑体，留空会检测系统是否安装思源黑体，有则使用无则宋体(Windows)或者苹方(macOS)
 ```
 
-如果是本地调试，则无需新建`config.ini`，程序会自动为url填充http://localhost:5212
+如果是本地调试，则无需新建`config.ini`，程序会请求http://localhost:5212
 
 ## 食用方式
 
