@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.1.9.7 Dev"
+App_Version = "0.1.9.8 Dev"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -686,7 +686,6 @@ def UploadFileLocalThread():
             session.keep_alive = False
             session.cookies = ReadCookies()
             response = session.put(UploadFile_URL_Require, data=json.dumps(data))
-            print(response.text)
             sessionID = response.json()['data']['sessionID']
             chunk_size = response.json()['data']['chunkSize']
             try:
@@ -697,6 +696,7 @@ def UploadFileLocalThread():
                     print("识别成功，上传策略为SharePoint")
                     Upload_Type = 'onedrive'
                     UploadFile_URL = Upload_URL
+                    CallbackURL = URL + "/api/v3/callback/onedrive/finish/" + sessionID
             except:
                 print("本地策略上传")
                 Upload_Type = 'local'
@@ -707,7 +707,6 @@ def UploadFileLocalThread():
                         chunk_no = 0
                         for chunk_file in range(0, file_size, chunk_size):
                             chunk = f.read(chunk_size)
-                            end = min(i + chunk_size, file_size) - 1
     
                             if Upload_Type == "local":
                                 UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
@@ -722,15 +721,27 @@ def UploadFileLocalThread():
                                 print('分片',chunk_file,'上传失败，错误：',response.json())
                             chunk_no += 1
                         print("文件",file_name,'上传成功')
-                    except:
-                        print(response.text)
+                except Exception as e:
+                    print("上传失败，错误：",e)
             elif Upload_Type == "onedrive":
-                #TODO:Onedrive上传
-                pass
-            except:
-                print(response.text)
-    print("文件全部上传完成")
-    GetDirList('/')
+                try:
+                    with open(file_path, 'rb') as file:
+                        for i in range(0, file_size, chunk_size):
+                            start = i
+                            end = min(i + chunk_size, file_size) - 1
+                            Uploader = session.put(
+                                UploadFile_URL,
+                                headers={
+                                    'Content-Type': 'application/octet-stream',
+                                    'Content-Range': f'bytes {start}-{end}/{file_size}',
+                                },
+                                data=file.read(chunk_size),
+                            )
+                    Callbacker = session.post(CallbackURL, json={})
+                except Exception as e:
+                    print("上传失败，错误：", e)
+    print("上传队列已完成")
+    GetDirList(RealAddress)
 
 # 下载文件事件
 def DownloadFile():
