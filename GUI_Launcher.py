@@ -701,40 +701,32 @@ def UploadFileLocalThread():
                 print("本地策略上传")
                 Upload_Type = 'local'
                 UploadFile_URL = URL + '/api/v3/file/upload/' + sessionID + '/'
-            try:
-                with open(file_path, 'rb') as f:
-                    chunk_no = 0
-                    for chunk_file in range(0, file_size, chunk_size):
-                        chunk = f.read(chunk_size)
-                        end = min(i + chunk_size, file_size) - 1
-
-                        if Upload_Type == "local":
-                            UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
-                        elif Upload_Type == "onedrive":
-                            UploadFile_URL_Now = UploadFile_URL
-                        print("准备上传文件",file_name,"的第",chunk_no,"个分片")
-                        if Upload_Type == 'local':
-                            response = session.post(UploadFile_URL_Now, data=chunk)
-                        elif Upload_Type == 'onedrive':
-                            response = session.put(UploadFile_URL_Now, 
-                                                   headers={
-                                                    'Content-Type': 'application/octet-stream',
-                                                    'Content-Range': f'bytes {chunk_file}-{end}/{file_size}',
-                                                            },
-                                                       data=chunk)
-                        print(response.text)
-                        if response.json()['code'] == 0:
-                            print(file_name, '的第', chunk_no, '个分片上传成功')
-                        else:
-                            print('分片',chunk_file,'上传失败，错误：',response.json())
-                        chunk_no += 1
-                    if Upload_Type == "local":
+            if Upload_Type == "local":
+                try:
+                    with open(file_path, 'rb') as f:
+                        chunk_no = 0
+                        for chunk_file in range(0, file_size, chunk_size):
+                            chunk = f.read(chunk_size)
+                            end = min(i + chunk_size, file_size) - 1
+    
+                            if Upload_Type == "local":
+                                UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
+                            elif Upload_Type == "onedrive":
+                                UploadFile_URL_Now = UploadFile_URL
+                            print("准备上传文件",file_name,"的第",chunk_no,"个分片")
+                            if Upload_Type == 'local':
+                                response = session.post(UploadFile_URL_Now, data=chunk)
+                            if response.json()['code'] == 0:
+                                print(file_name, '的第', chunk_no, '个分片上传成功')
+                            else:
+                                print('分片',chunk_file,'上传失败，错误：',response.json())
+                            chunk_no += 1
                         print("文件",file_name,'上传成功')
-                    elif Upload_Type == "onedrive":
-                        print('文件已上传到SharePoint，等待服务端处理……')
-                        continueUpload_url = URL + '/api/v3/callback/ondrive/finish/' + sessionID
-                        response = requests.post(url=continueUpload_url,cookies=ReadCookies)
+                    except:
                         print(response.text)
+            elif Upload_Type == "onedrive":
+                #TODO:Onedrive上传
+                pass
             except:
                 print(response.text)
     print("文件全部上传完成")
