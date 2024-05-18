@@ -56,7 +56,7 @@ config.read('config.ini')
 
 # 主题配置文件预载（如果配置文件不存在则预载浅色模式）
 try:
-    if config['settings']['theme'] == 'light':
+    if config['settings']['theme'] == 'Light':
         theme = {'Theme': "cosmo", 'Menu': 'light'}
     else:
         theme = {'Theme': "darkly", 'Menu': 'secondary'}
@@ -77,6 +77,8 @@ except:
 # 设置配置文件中目标HFR-Cloud / Cloudreve的地址，没有则默认连接本机Cloudreve
 try:
     URL = config['account']['url']
+    if URL == "":
+        URL = "http://127.0.0.1:5212"
 except:
     URL = "http://127.0.0.1:5212"
 
@@ -1136,6 +1138,44 @@ def Personal_Settings():
 def AppSettings():
     Home_Frame.pack_forget()
     AppSettings_Frame.pack(fill=BOTH, expand=YES)
+    ServerURL_Entry.delete(0, END)
+    ServerURL_Entry.insert(0, URL)
+    UserName_Entry.delete(0, END)
+    try:
+        UserName_Entry.insert(0, localaccount)
+    except:
+        pass
+    Theme_Entry.delete(0, END)
+    try:
+        Theme_Entry.insert(0, config['settings']['theme'])
+    except:
+        Theme_Entry.insert(0, 'Light')
+
+# 保存APP设置
+def SaveAppSettings():
+    try:
+        if ServerURL_Entry.get() != URL:
+            dialogs.Messagebox.show_warning(message='更改服务器地址需要重新登录')
+            # 删除文件同目录下的cookies.txt
+            try:
+                os.remove('cookies.txt')
+            except:
+                pass
+        config['account']['url'] = ServerURL_Entry.get()
+        config['account']['username'] = UserName_Entry.get()
+        try:
+            config['settings']['theme'] = Theme_Entry.get()
+        except:
+            config.add_section('settings')
+            config['settings']['theme'] = Theme_Entry.get()
+        with open('config.ini', 'w') as configfile:
+            config.write(configfile)
+        dialogs.Messagebox.show_info(message='保存成功，即将重启程序')
+        pid = os.getpid()
+        os.execl(os.path.abspath(__file__), *sys.argv)
+    except Exception as e:
+        dialogs.Messagebox.show_error(message='保存失败，错误：' + str(e) + "\n如果你未打包该程序，这是正常现象，请手动重启程序。\n本程序将会自动关闭。")
+        exit()
 
 # 关于程序
 def About():
@@ -1542,7 +1582,7 @@ Personal_Settings_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
 AppSettings_Frame = ttk.Frame(app)
 
-AppSettings_title = ttk.Label(AppSettings_Frame, text="APP 设置", font=(Fonts, 18))
+AppSettings_title = ttk.Label(AppSettings_Frame, text="APP 设置 (请谨慎填写，否则可能出现问题)", font=(Fonts, 18))
 AppSettings_title.pack(anchor="nw", padx=20, pady=20)
 
 ServerURL_Label = ttk.Label(AppSettings_Frame, text="服务器地址", font=(Fonts, 14))
@@ -1554,14 +1594,32 @@ ServerURL_SubLabel.pack(anchor="nw", padx=60)
 ServerURL_Entry = ttk.Entry(AppSettings_Frame, width=30)
 ServerURL_Entry.pack(anchor="nw", padx=60)
 
+UserName_Label = ttk.Label(AppSettings_Frame, text="用户名", font=(Fonts, 14))
+UserName_Label.pack(anchor="nw", padx=40)
+
+UserName_SubLabel = ttk.Label(AppSettings_Frame, text="此处保存的用户名将会在无法自动登录时自动填写", font=(Fonts, 10))
+UserName_SubLabel.pack(anchor="nw", padx=60)
+
+UserName_Entry = ttk.Entry(AppSettings_Frame, width=30)
+UserName_Entry.pack(anchor="nw", padx=60)
+
+Theme_Label = ttk.Label(AppSettings_Frame, text="主题", font=(Fonts, 14))
+Theme_Label.pack(anchor="nw", padx=40)
+
+Theme_SubLabel = ttk.Label(AppSettings_Frame, text="可以填写Light与Dark来切换", font=(Fonts, 10))
+Theme_SubLabel.pack(anchor="nw", padx=60)
+
+Theme_Entry = ttk.Entry(AppSettings_Frame, width=30)
+Theme_Entry.pack(anchor="nw", padx=60)
+
 AppSettings_Button_Frame = ttk.Frame(AppSettings_Frame)
 AppSettings_Button_Frame.pack(padx=10, pady=10)
 
-AppSettings_Save_Button = ttk.Button(AppSettings_Button_Frame, text="保存", state="disabled")
-AppSettings_Save_Button.pack(side=ttk.LEFT, padx=10, pady=10)
+AppSettings_Save_Button = ttk.Button(AppSettings_Button_Frame, text="保存 (需要重启程序)", command=SaveAppSettings)
+AppSettings_Save_Button.pack(side=ttk.LEFT, padx=10, pady=10, ipadx=20)
 
 AppSettings_Cancel = ttk.Button(AppSettings_Button_Frame, text="取消", bootstyle="outline", command=BackToHome)
-AppSettings_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
+AppSettings_Cancel.pack(side=ttk.LEFT, padx=10, pady=10, ipadx=20)
 
 # App设置页布局结束,管理面板页布局开始
 Manage_Panel_Frame = ttk.Frame(app)
