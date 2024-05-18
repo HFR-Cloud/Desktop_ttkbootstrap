@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.2.0"
+App_Version = "0.2.1"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -74,7 +74,7 @@ try:
 except:
     locales = zh_CN
 
-# 设置配置文件中目标HeyCloud / Cloudreve的地址，没有则默认连接本机Cloudreve
+# 设置配置文件中目标HFR-Cloud / Cloudreve的地址，没有则默认连接本机Cloudreve
 try:
     URL = config['account']['url']
 except:
@@ -86,19 +86,21 @@ try:
 except:
     Fonts = "思源黑体"
 
-# 从本机中读取账号密码，这一功能在后续会添加加密读取
+# 从本机中读取账号与2FA密钥，如果没有保存就pass
 try:
     localaccount = config.get('account', 'username')
     otp_key = pyotp.TOTP(config.get('account', 'OTPKey'))
 except:
     pass
 
+# 初始化全局变量
 Cloud_name = 'Loading……'
 Login_captcha = False
 
 # 初始化软件服务
 def init():
     app.place_window_center()
+    # 定义全局变量
     global Cloud_name
     global Login_captcha
 
@@ -113,14 +115,21 @@ def init():
             captcha_Type = Cloud_Info['data']['captcha_type']
             Login_captcha = Cloud_Info['data']['loginCaptcha']
             if captcha_Type == 'recaptcha' and Login_captcha == True:
-                dialogs.Messagebox.show_error(message='暂不支持登录reCaptcha的服务端')
+                app.geometry("623x400")
+                app.place_window_center()
+                Launching_Label.configure(text='暂不支持登录reCaptcha的服务端', font=('思源黑体', 12))
                 sys.exit()
             elif captcha_Type == 'tcaptcha' and Login_captcha == True:
-                dialogs.Messagebox.show_error(message='暂不支持登录腾讯云验证码的服务端')
+                app.geometry("623x400")
+                app.place_window_center()
+                Launching_Label.configure(text='暂不支持登录腾讯云验证码的服务端', font=('思源黑体', 12))
                 sys.exit()
+        # 原本是需要下面这一行来判断远程Cloudreve版本的，但是新版不需要，仅留获取版本接口
         # Cloud_Version = requests.get(URL + "/api/v3/site/ping").json()['data']
     except Exception as e:
-        dialogs.Messagebox.show_error(message='程序出现错误或无法连接到服务端，错误原因：' + str(e))
+        app.geometry("623x400")
+        app.place_window_center()
+        Launching_Label.configure(text='程序出现错误或无法连接到服务端，错误原因：' + str(e), font=('思源黑体', 12))
         sys.exit()
 
     # 自动登录
@@ -140,6 +149,7 @@ def init():
         Launch_Frame.pack_forget()
         errorCode.set('自动登录失败，请手动登录')
         Home_Frame.pack_forget()
+        # 判断是否需要验证码，如果需要则将窗口放大来适应验证码
         if Login_captcha:
             app.geometry("623x450")
         else:
@@ -152,7 +162,7 @@ def init():
     if Login_captcha:
         captcha_Login()
     
-# 定义上传/下载队列
+# 定义上传/下载队列（目前没什么用）
 Upload_queue = []
 Download_queue = []
 
@@ -175,7 +185,7 @@ def forgetPassword():
     forget_URL = URL + "/forget"
     webbrowser.open(forget_URL)
 
-# 带验证码的登录事件
+# 带验证码的登录事件（请求验证码，base64格式的图片）
 def captcha_Login():
     CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
     cookies = ReadCookies()
@@ -195,7 +205,7 @@ def captcha_Login():
         label_captcha_Pic.image = captcha_photo  # 保存对图片的引用
 
 # 登录成功后执行
-def SuccessLogin(response, WhenStart=False):
+def SuccessLogin(response, WhenStart=False):        # WhenStart：程序启动时自动登录时的请求
     if WhenStart:
         AutoLoginURL = URL + "/api/v3/site/config"
         cookies = ReadCookies()
@@ -209,32 +219,32 @@ def SuccessLogin(response, WhenStart=False):
         cookieWriter = open('cookies.txt', 'w')  # 创建名为cookies.txt的文件，以写入模式写入内容
         cookieWriter.write(cookies_str)
         cookieWriter.close()
-    if WhenStart:
-        config.set('account', 'id', response.json()['data']['user']['id'])
-        config.set('account', 'nickname', response.json()['data']['user']['nickname'])
-        config.set('account', 'groupname', response.json()['data']['user']['group']['name'])
-        config.set('account', 'AllowShare', str(response.json()['data']['user']['group']['allowShare']))
-        config.set('account', 'AllowRemoteDownload',
-                   str(response.json()['data']['user']['group']['allowRemoteDownload']))
-        config.set('account', 'AllowArchiveDownload',
-                   str(response.json()['data']['user']['group']['allowArchiveDownload']))
-        try:
-            config.set('account', 'AdvanceDelete', str(response.json()['data']['user']['group']['advanceDelete']))
-            config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['user']['group']['allowWebDAVProxy']))
-        except:
-            print('无法读取某些配置，可能是服务端版本过低')
-    else:
-        config.set('account', 'id', response.json()['data']['id'])
-        config.set('account', 'nickname', response.json()['data']['nickname'])
-        config.set('account', 'groupname', response.json()['data']['group']['name'])
-        config.set('account', 'AllowShare', str(response.json()['data']['group']['allowShare']))
-        config.set('account', 'AllowRemoteDownload', str(response.json()['data']['group']['allowRemoteDownload']))
-        config.set('account', 'AllowArchiveDownload', str(response.json()['data']['group']['allowArchiveDownload']))
-        try:
-            config.set('account', 'AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
-            config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
-        except:
-            print('无法读取某些配置，可能是服务端版本过低')
+        if WhenStart:
+            config.set('account', 'id', response.json()['data']['user']['id'])
+            config.set('account', 'nickname', response.json()['data']['user']['nickname'])
+            config.set('account', 'groupname', response.json()['data']['user']['group']['name'])
+            config.set('account', 'AllowShare', str(response.json()['data']['user']['group']['allowShare']))
+            config.set('account', 'AllowRemoteDownload',
+                    str(response.json()['data']['user']['group']['allowRemoteDownload']))
+            config.set('account', 'AllowArchiveDownload',
+                    str(response.json()['data']['user']['group']['allowArchiveDownload']))
+            try:
+                config.set('account', 'AdvanceDelete', str(response.json()['data']['user']['group']['advanceDelete']))
+                config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['user']['group']['allowWebDAVProxy']))
+            except:
+                print('无法读取某些配置，可能是服务端版本过低')
+        else:
+            config.set('account', 'id', response.json()['data']['id'])
+            config.set('account', 'nickname', response.json()['data']['nickname'])
+            config.set('account', 'groupname', response.json()['data']['group']['name'])
+            config.set('account', 'AllowShare', str(response.json()['data']['group']['allowShare']))
+            config.set('account', 'AllowRemoteDownload', str(response.json()['data']['group']['allowRemoteDownload']))
+            config.set('account', 'AllowArchiveDownload', str(response.json()['data']['group']['allowArchiveDownload']))
+            try:
+                config.set('account', 'AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
+                config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
+            except:
+                print('无法读取某些配置，可能是服务端版本过低')
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     Launch_Frame.pack_forget()
@@ -279,7 +289,7 @@ def loginOTP():
     button_BackToLogin.config(state='disabled')
     threading.Thread(target=loginOTP_Process).start()
 
-
+# OTP登录处理（线程不卡GUI）
 def loginOTP_Process():
     username = entry_username.get()
     config.set('account', 'username', username)
@@ -488,7 +498,7 @@ def get_last_part(variable):
     return parts[-1]
 
 
-# 返回上级文件的地址处理
+# 返回上级文件的地址处理    调用：last_dir("/1/2/3/4") 返回：/1/2/3
 def last_dir(s):
     dir = s[:s.rfind('/')] if '/' in s else ''
     if dir == '':
@@ -740,7 +750,7 @@ def UploadFileLocalThread():
                                 },
                                 data=file.read(chunk_size),
                             )
-                    Callbacker = session.post(CallbackURL, json={})
+                    session.post(CallbackURL, json={})
                 except Exception as e:
                     print("上传失败，错误：", e)
     GetDirList(RealAddress)
@@ -793,6 +803,13 @@ def SearchDoc():
     SearchFile(Type='doc')
 
 def SearchFile(Keywords='', Type='None'):
+    if Keywords[0] == '/':      # 如果搜索关键词是路径
+        try:
+            GetDirList(Keywords)
+        except Exception as e:
+            print("未知错误：", e)
+            return 0
+        return 0
     if Type == 'None' and Keywords == '':
         dialogs.Messagebox.show_error(message='请输入搜索关键词或路径')
         return 0
@@ -811,6 +828,9 @@ def SearchFile(Keywords='', Type='None'):
     session.keep_alive = False
     session.cookies = cookies
     response = session.get(Search_URL)
+    if response.text == '404 page not found':
+        dialogs.Messagebox.show_error(message='服务商可能关闭了搜索功能，请联系服务商')
+        return 0
     status_code = response.json()['code']
     if status_code == 0:
         fileList.delete(*fileList.get_children())  # 清空文件列表
@@ -924,7 +944,7 @@ def DeleteFile():
         if response.status_code == 200:
             status_code = response.json()['code']
             if status_code == 0:
-                dialogs.Messagebox.show_info(message='删除成功')
+                pass
             else:
                 print(response.text)
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
@@ -952,7 +972,7 @@ def DeleteDir():
         if response.status_code == 200:
             status_code = response.json()['code']
             if status_code == 0:
-                dialogs.Messagebox.show_info(message='删除成功')
+                pass
             else:
                 print(response.text)
                 dialogs.Messagebox.show_error(message='未知错误：' + response.text)
@@ -1114,21 +1134,13 @@ def Personal_Settings():
 
 # APP设置启动
 def AppSettings():
-    config = open('config.ini', 'r', encoding='gb18030')
-    APPSettingstextbox.insert(1.0, config.readlines())
-    config.close()
     Home_Frame.pack_forget()
     AppSettings_Frame.pack(fill=BOTH, expand=YES)
 
-def AppSettings_Save():
-    config = open('config.ini', 'w', encoding='gb18030')
-    config.write(APPSettingstextbox.get(1.0, END))
-    config.close()
-    dialogs.Messagebox.show_info(message='保存成功')
-    BackToHome()
-
+# 关于程序
 def About():
     Home_Frame.pack_forget()
+    app.title('关于 HFR-Cloud Desktop')
     About_Frame.pack(fill=BOTH, expand=YES)
 
 def BackToHome():
@@ -1173,7 +1185,7 @@ ProgressBar.start(25)
 Launch_Frame = ttk.Frame(app)
 Launch_Frame.pack(fill=BOTH, expand=YES)
 
-Launching_Label = ttk.Label(Launch_Frame, text=locales['launching'], font=(Fonts, 16))
+Launching_Label = ttk.Label(Launch_Frame, text=locales['launching'], font=(Fonts, 16), wraplength=400)
 Launching_Label.place(relx=0.5, rely=0.5, anchor=ttk.CENTER)
 
 # 登录页布局
@@ -1185,6 +1197,13 @@ loginFrame.pack(side=ttk.LEFT, fill=BOTH, expand=YES)
 LoginAppName = '登录 ' + Cloud_name
 label_APPNAME = ttk.Label(loginFrame, text=LoginAppName, font=(Fonts, 24))
 label_APPNAME.pack(pady=10)
+
+"""
+LoginConfigMenu = ttk.Menu(LoginAppName, relief='raised')
+LoginConfigMenu.add_command(label="编辑配置文件", font=(Fonts, 10))
+LoginConfigMenu.add_command(label="清除所有配置", font=(Fonts, 10))
+LoginAppName.config(menu=LoginConfigMenu)
+"""
 
 errorCode = ttk.StringVar()
 loginErrorCode = ttk.Label(loginFrame, bootstyle="danger", font=(Fonts, 12), textvariable=errorCode)
@@ -1268,7 +1287,7 @@ fileMenuButton.pack(side=ttk.LEFT)
 AddressBar = ttk.Entry(MenuBar)
 AddressBar.insert(0, '/')
 AddressBar.bind('<Return>', ListNewDir)
-AddressBar.pack(side=ttk.LEFT, fill=ttk.X, padx=10, ipadx=120)
+AddressBar.pack(side=ttk.LEFT, fill=ttk.X, padx=10, ipadx=120, expand=True)
 
 accountInfo = ttk.Menubutton(MenuBar, text="信息加载中……", bootstyle=theme['Menu'])
 accountInfo.pack(side=ttk.RIGHT)
@@ -1375,8 +1394,7 @@ FilePreview_Button_Frame.pack(side=ttk.BOTTOM, anchor="se", padx=20, pady=20)
 FilePreview_Save_button = ttk.Button(FilePreview_Button_Frame, text="保存 ( 暂不支持 )", state='disabled')
 FilePreview_Save_button.pack(side=ttk.LEFT, padx=10, ipadx=20)
 
-FilePreview_Cancel_button = ttk.Button(FilePreview_Button_Frame, text="取消", bootstyle='outline',
-                                       command=filePreview_Back)
+FilePreview_Cancel_button = ttk.Button(FilePreview_Button_Frame, text="取消", bootstyle='outline', command=filePreview_Back)
 FilePreview_Cancel_button.pack(side=ttk.LEFT, padx=10, ipadx=20)
 
 # 文件预览界面结束，WebDAV配置页布局开始
@@ -1524,20 +1542,26 @@ Personal_Settings_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
 AppSettings_Frame = ttk.Frame(app)
 
-AppSettings_title = ttk.Label(AppSettings_Frame, text="APP 设置 (不懂请勿修改)", font=(Fonts, 18))
-AppSettings_title.pack(anchor='nw', padx=20, pady=20)
+AppSettings_title = ttk.Label(AppSettings_Frame, text="APP 设置", font=(Fonts, 18))
+AppSettings_title.pack(anchor="nw", padx=20, pady=20)
 
-APPSettingstextbox = ttk.ScrolledText(AppSettings_Frame, font=("Consolas", 10))
-APPSettingstextbox.pack(fill=ttk.BOTH, expand=True)
+ServerURL_Label = ttk.Label(AppSettings_Frame, text="服务器地址", font=(Fonts, 14))
+ServerURL_Label.pack(anchor="nw", padx=40)
+
+ServerURL_SubLabel = ttk.Label(AppSettings_Frame, text="注意前面要带http://或者https://，且结尾不需要加/", font=(Fonts, 10))
+ServerURL_SubLabel.pack(anchor="nw", padx=60)
+
+ServerURL_Entry = ttk.Entry(AppSettings_Frame, width=30)
+ServerURL_Entry.pack(anchor="nw", padx=60)
 
 AppSettings_Button_Frame = ttk.Frame(AppSettings_Frame)
-AppSettings_Button_Frame.pack(side=ttk.BOTTOM, anchor="se", padx=20, pady=20)
+AppSettings_Button_Frame.pack(padx=10, pady=10)
 
-AppSettings_Save_button = ttk.Button(AppSettings_title, text="保存", state='disabled', command=AppSettings_Save)
-AppSettings_Save_button.pack(side=ttk.RIGHT, padx=10, ipadx=20)
+AppSettings_Save_Button = ttk.Button(AppSettings_Button_Frame, text="保存", state="disabled")
+AppSettings_Save_Button.pack(side=ttk.LEFT, padx=10, pady=10)
 
-AppSettings_Cancel_button = ttk.Button(AppSettings_title, text="取消", bootstyle='outline', command=BackToHome)
-AppSettings_Cancel_button.pack(side=ttk.RIGHT, padx=10, ipadx=20)
+AppSettings_Cancel = ttk.Button(AppSettings_Button_Frame, text="取消", bootstyle="outline", command=BackToHome)
+AppSettings_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
 # App设置页布局结束,管理面板页布局开始
 Manage_Panel_Frame = ttk.Frame(app)
@@ -1552,7 +1576,7 @@ About_Frame = ttk.Frame(app)
 About_title = ttk.Label(About_Frame,text="关于 HFR-Cloud Desktop",font=(Fonts, 18))
 About_title.pack(anchor="nw",padx=20,pady=20)
 
-About_info = ttk.Label(About_Frame,text="什么是HFR-Cloud Desktop？这是HFR-Cloud的PC端开源客户端，\n支持连接HFR-Cloud，并兼容Cloudreve v3",font=(Fonts, 12))
+About_info = ttk.Label(About_Frame,text="什么是HFR-Cloud Desktop？这是HFR-Cloud的PC端开源客户端，\n支持连接HFR-Cloud Server的网盘部分，并兼容Cloudreve v3。\n已测试的HFR-Cloud Server域名：\nhttps://i.xiaoqiu.in(目前不可用）\n\n已测试的Cloudreve域名:\nhttps://pan.xiaoqiu.in\nhttps://pan.ilisuo.cn\nHFR-Cloud在此对这些服务商表示衷心感谢。\n\n开发者：\n于小丘：HFR-Cloud Desktop整体框架，是本程序的主要开发者\n暗之旅者：对HFR-Cloud Desktop进行调试，提出相关问题的解决思路",font=(Fonts, 12))
 About_info.pack(anchor="nw",padx=40)
 
 About_info_Done = ttk.Button(About_Frame, text="完成", bootstyle="outline", command=BackToHome)
