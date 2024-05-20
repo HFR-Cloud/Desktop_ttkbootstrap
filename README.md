@@ -33,23 +33,24 @@
 - Cloudreve：V3 `推荐：3.8.4 Pro 因为本人基于此版本开发，使用早期版本可能出现问题`
 
 ## 程序配置设置
-需要在程序根目录新建文件`config.ini`。示例内容如下：
+需要在程序根目录新建文件`config.ini`。示例内容如下，真正填写时请去掉分号以及分号后的内容：
 ```
 [account]
 url = http://localhost:5212         ;这里填写服务端的地址，若为ip访问，HFR-Cloud默认使用7030端口，Cloudreve默认使用5212端口；填写你需要接入的地址，结尾不需要加“/”
-username = admin@yuxiaoqiu.cn       ;这里选填邮箱，自动登录失败时会自动将此邮箱填入输入框
-id = AqbS                           ;用户ID
-nickname = Cloudreve                ;用户名
-groupname = Admin                   ;头衔（在Cloudreve被称为用户组名称）
-allowshare = True                   ;是否允许分享
-allowremotedownload = True          ;是否允许多线程下载
-allowarchivedownload = True         ;是否允许打包下载
-advancedelete = True                ;是否允许高级删除
-allowwebdavproxy = False            ;是否允许webdav代理
+username = admin@yuxiaoqiu.cn       ;(可不填)邮箱，自动登录失败时会自动将此邮箱填入输入框
+id = AqbS                           ;(可不填)用户ID
+nickname = Cloudreve                ;(可不填)用户名
+groupname = Admin                   ;(可不填)头衔（在Cloudreve被称为用户组名称）
+allowshare = True                   ;(可不填)是否允许分享
+allowremotedownload = True          ;(可不填)是否允许多线程下载
+allowarchivedownload = True         ;(可不填)是否允许打包下载
+advancedelete = True                ;(可不填)是否允许高级删除
+allowwebdavproxy = False            ;(可不填)是否允许webdav代理
 
 [settings]
-theme = light                       ;程序主题，可自行填写light或者dark
-fonts = 思源黑体                    ;程序字体，推荐思源黑体，留空会检测系统是否安装思源黑体，有则使用无则宋体(Windows)或者苹方(macOS)
+Server = Hfrcloud                   ;服务器采用的是HFR-Cloud就填写Hfrcloud，否则请填写Cloudreve_V3
+theme = light                       ;(可不填)程序主题，可自行填写light或者dark
+fonts = 思源黑体                     ;(可不填)程序字体，推荐思源黑体，留空会检测系统是否安装思源黑体，有则使用无则宋体(Windows)或者苹方(macOS)
 ```
 
 如果是本地调试，则无需新建`config.ini`，程序会请求http://localhost:5212

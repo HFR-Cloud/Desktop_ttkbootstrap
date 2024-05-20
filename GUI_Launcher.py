@@ -3,12 +3,58 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.2.1"
+App_Version = "0.2.1.1"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
 zh_TW = {"login": "登錄", "username": "用戶名：", "password": "密    碼：", "captcha": "驗證碼：", "OTP": "OTP驗證碼"}
 en_US = {"login": "Login", "username": "Username", "password": "Password", "captcha": "Captcha", "OTP": "OTP Code"}
+
+# 填充api信息
+Cloudreve_V3 = {
+    "ping":"/api/v3/site/ping",
+    "siteConfig":"/api/v3/site/config",
+    "session":"/api/v3/user/session",
+    "captcha":"/api/v3/site/captcha",
+    "2fa":"/api/v3/user/2fa",
+    "filePreview":"/api/v3/file/content/",
+    "dirList":"/api/v3/directory",
+    "fileUpload":"/api/v3/file/upload",
+    "OneDriveCallback":"/api/v3/callback/onedrive/finish/",
+    "fileDownload":"/api/v3/file/download/",
+    "userStorage":"/api/v3/user/storage",
+    "searchKeywords":"/api/v3/search/keywords/",
+    "searchVideo":"/api/v3/search/video/internal",
+    "searchAudio":"/api/v3/search/audio/internal",
+    "searchImage":"/api/v3/search/image/internal",
+    "searchDoc":"/api/v3/search/doc/internal",
+    "MakeFile":"/api/v3/file/create",
+    "MakeDir":"/api/v3/directory",
+    "DeleteFileDir":"/api/v3/object",
+    "webdavAccount":"/api/v3/webdav/accounts"
+}
+Hfrcloud = {
+    "ping":"/api/site/ping",
+    "siteConfig":"/api/site/config",
+    "session":"/api/oauth/session",
+    "captcha":"/api/oauth/captcha",
+    "2fa":"/api/oauth/2fa",
+    "filePreview":"/api/disk/file/preview/",
+    "dirList":"/api/disk/directory",
+    "fileUpload":"/api/disk/file/upload",
+    "OneDriveCallback":"/api/disk/callback/onedrive/finish/",
+    "fileDownload":"/api/disk/file/download/",
+    "userStorage":"/api/disk/user/storage",
+    "searchKeywords":"/api/disk/search/keywords/",
+    "searchVideo":"/api/disk/video/internal",
+    "searchAudio":"/api/disk/audio/internal",
+    "searchImage":"/api/disk/image/internal",
+    "searchDoc":"/api/disk/doc/internal",
+    "MakeFile":"/api/disk/create/file",
+    "MakeDir":"/api/disk/create/directory",
+    "DeleteFileDir":"/api/disk/object",
+    "webdavAccount":"/api/disk/webdav/account"
+}
 
 # 导入必要库
 import ttkbootstrap as ttk              # ttkbootstrap   开源许可:MIT
@@ -74,6 +120,15 @@ try:
 except:
     locales = zh_CN
 
+# 服务端选择
+try:
+    if config['settings']['Server'] == 'Cloudreve_V3':
+        router = Cloudreve_V3
+    elif config['settings']['Server'] == 'Hfrcloud':
+        router = Hfrcloud
+except:
+    router = Cloudreve_V3
+
 # 设置配置文件中目标HFR-Cloud / Cloudreve的地址，没有则默认连接本机Cloudreve
 try:
     URL = config['account']['url']
@@ -108,7 +163,7 @@ def init():
 
     # 获取云盘信息
     try:
-        Cloud_Info = requests.get(URL + "/api/v3/site/config")
+        Cloud_Info = requests.get(URL + router["siteConfig"])
         if Cloud_Info.status_code == 200:
             Cloud_Info = Cloud_Info.json()
             Cloud_name = Cloud_Info['data']['title']
@@ -189,7 +244,7 @@ def forgetPassword():
 
 # 带验证码的登录事件（请求验证码，base64格式的图片）
 def captcha_Login():
-    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
+    CAPTCHA_GET_URL = URL + router["captcha"]
     cookies = ReadCookies()
     session = requests.session()
     session.cookies = cookies
@@ -209,7 +264,7 @@ def captcha_Login():
 # 登录成功后执行
 def SuccessLogin(response, WhenStart=False):        # WhenStart：程序启动时自动登录时的请求
     if WhenStart:
-        AutoLoginURL = URL + "/api/v3/site/config"
+        AutoLoginURL = URL + router["siteConfig"]
         cookies = ReadCookies()
         session = requests.Session()
         session.keep_alive = False
@@ -261,7 +316,7 @@ def SuccessLogin(response, WhenStart=False):        # WhenStart：程序启动�
 
 # 刷新验证码
 def RefrushCaptcha(event):
-    CAPTCHA_GET_URL = URL + '/api/v3/site/captcha'
+    CAPTCHA_GET_URL = URL + router["captcha"]
     cookies = ReadCookies()
     session = requests.session()
     session.cookies = cookies
@@ -312,8 +367,8 @@ def loginOTP_Process():
     TwoFA_data = {
         'code': TwoFACode
     }
-    LOGIN_URL = URL + '/api/v3/user/session'
-    TwoFA_URL = URL + '/api/v3/user/2fa'
+    LOGIN_URL = URL + router["session"]
+    TwoFA_URL = URL + router["2fa"]
     try:
         response = requests.post(LOGIN_URL, json=login_data)
     except ConnectionError:
@@ -370,7 +425,7 @@ def login_process():
         'password': password,
         'captchaCode': captcha
     }
-    LOGIN_URL = URL + '/api/v3/user/session'
+    LOGIN_URL = URL + router["session"]
     try:
         cookies = ReadCookies()
     except:
@@ -469,7 +524,7 @@ def BackToLogin():
 def LogOut():
     # 创建新线程来处理退出登录过程
     fileList.delete(*fileList.get_children())  # 清空文件列表
-    ROOTPATH_URL = URL + '/api/v3/user/session'
+    ROOTPATH_URL = URL + router["session"]
     cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
@@ -560,7 +615,7 @@ def filelistonclick(event):
                 pass
             elif fileType == 'txt' or fileType == 'md' or fileType == 'json' or fileType == 'php' or fileType == 'py' or fileType == 'bat' or fileType == 'cpp' or fileType == 'c' or fileType == 'h' or fileType == 'java' or fileType == 'js' or fileType == 'html' or fileType == 'css' or fileType == 'xml' or fileType == 'yaml' or fileType == 'yml' or fileType == 'sh' or fileType == 'ini' or fileType == 'conf' or fileType == 'log':
                 FilePreview_title.config(text=choose_name)
-                Preview_Url = URL + "/api/v3/file/content/" + str(selected_item_values[4])
+                Preview_Url = URL + router["filePreview"] + str(selected_item_values[4])
                 cookies = ReadCookies()
                 session = requests.Session()
                 session.keep_alive = False
@@ -601,7 +656,7 @@ def GetDirList(path="%2F", WhenStart=False):
         fileList.pack_forget()
         ProgressBar.pack(fill=ttk.X)
 
-        ROOTPATH_URL = URL + '/api/v3/directory' + path
+        ROOTPATH_URL = URL + router["dirList"] + path
         cookies = ReadCookies()
         session = requests.Session()
         session.keep_alive = False
@@ -690,7 +745,7 @@ def UploadFileLocalThread():
             file_path = file_Path[i]
             file_name = os.path.basename(file_path)
             file_size = os.path.getsize(file_path)
-            UploadFile_URL_Require = URL + '/api/v3/file/upload'
+            UploadFile_URL_Require = URL + router["fileUpload"]
             data = {
                 'path': RealAddress,
                 'policy_id': Policy_ID,
@@ -711,11 +766,11 @@ def UploadFileLocalThread():
                     print("识别成功，上传策略为SharePoint")
                     Upload_Type = 'onedrive'
                     UploadFile_URL = Upload_URL
-                    CallbackURL = URL + "/api/v3/callback/onedrive/finish/" + sessionID
+                    CallbackURL = URL + router["OneDriveCallback"] + sessionID
             except:
                 print("本地策略上传")
                 Upload_Type = 'local'
-                UploadFile_URL = URL + '/api/v3/file/upload/' + sessionID + '/'
+                UploadFile_URL = URL + router["fileUpload"] + '/' + sessionID + '/'
             if Upload_Type == "local":
                 try:
                     with open(file_path, 'rb') as f:
@@ -763,14 +818,14 @@ def DownloadFile():
     selected_item_values = fileList.item(select_ID)['values']
     print(selected_item_values)
     fileID = selected_item_values[4]
-    Download_Require = URL + '/api/v3/file/download/' + fileID
+    Download_Require = URL + router["fileDownload"] + fileID
     cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
     session.cookies = cookies
     response = session.put(Download_Require)
     Download_Path = response.json()['data']
-    if Download_Path.startswith('/api/v3/file/download/'):
+    if Download_Path.startswith(router["fileDownload"]):
         Download_URL = URL + response.json()['data']
     else:
         Download_URL = response.json()['data']
@@ -779,7 +834,7 @@ def DownloadFile():
 
 # 刷新用户容量函数
 def RefrushStorage():
-    Require_URL = URL + '/api/v3/user/storage'
+    Require_URL = URL + router["userStorage"]
     cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
@@ -816,15 +871,15 @@ def SearchFile(Keywords='', Type='None'):
         dialogs.Messagebox.show_error(message='请输入搜索关键词或路径')
         return 0
     elif Type == 'None' and Keywords != '':
-        Search_URL = URL + '/api/v3/file/search/keywords/' + Keywords
+        Search_URL = URL + router["searchKeywords"] + Keywords
     elif Type == 'video':
-        Search_URL = URL + '/api/v3/file/search/video/internal'
+        Search_URL = URL + router["searchVideo"]
     elif Type == 'audio':
-        Search_URL = URL + '/api/v3/file/search/audio/internal'
+        Search_URL = URL + router["searchAudio"]
     elif Type == 'image':
-        Search_URL = URL + '/api/v3/file/search/image/internal'
+        Search_URL = URL + router["searchImage"]
     elif Type == 'doc':
-        Search_URL = URL + '/api/v3/file/search/doc/internal'
+        Search_URL = URL + router["searchDoc"]
     cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
@@ -888,7 +943,7 @@ def ReFrush():
 def MakeFile():
     FileName = dialogs.Querybox.get_string(title='新建文件', prompt='请输入文件名称')
     if FileName != '':
-        MakeDir_URL = URL + '/api/v3/file/create'
+        MakeDir_URL = URL + router["MakeFile"]
         data = {
             'path': RealAddress + "/" + FileName
         }
@@ -910,7 +965,7 @@ def MakeFile():
 def MakeDir():
     DirName = dialogs.Querybox.get_string(title='新建文件夹', prompt='请输入文件夹名称')
     if DirName != '':
-        MakeDir_URL = URL + '/api/v3/directory'
+        MakeDir_URL = URL + router["MakeDir"]
         DirPath = RealAddress + '/' + DirName
         data = {'path': DirPath}
         cookies = ReadCookies()
@@ -929,7 +984,7 @@ def MakeDir():
 
 # 删除文件相关
 def DeleteFile():
-    DeleteURL = URL + "/api/v3/object"
+    DeleteURL = URL + router["DeleteFileDir"]
     select_ID = fileList.focus()
     PreDeleteFileID = fileList.item(select_ID)['values'][4]
     PreDeleteFileName = fileList.item(select_ID)['values'][0].replace('📄 ', '')
@@ -957,7 +1012,7 @@ def DeleteFile():
 
 # 删除文件夹相关
 def DeleteDir():
-    DeleteURL = URL + "/api/v3/object"
+    DeleteURL = URL + router["DeleteFileDir"]
     select_ID = fileList.focus()
     PreDeleteDirID = fileList.item(select_ID)['values'][4]
     PreDeleteDirName = fileList.item(select_ID)['values'][0].replace('📁 ', '')
@@ -991,7 +1046,7 @@ def WebDAVPage():
         app.title("连接 - " + Cloud_name)
         Home_Frame.pack_forget()
         WebDAV_Settings_Frame.pack(fill=BOTH, expand=YES)
-        WebDAV_URL = URL + '/api/v3/webdav/accounts'
+        WebDAV_URL = URL + router["webdavAccount"]
         cookies = ReadCookies()
         session = requests.Session()
         session.keep_alive = False
@@ -1033,7 +1088,7 @@ def CreateWebDAVAccountOnClick():
     if WebDAV_Name == '' or WebDAV_Path == '':
         dialogs.Messagebox.show_error(message='请填写完整信息')
     else:
-        CreateWebDAVAccount_URL = URL + '/api/v3/webdav/accounts'
+        CreateWebDAVAccount_URL = URL + router["webdavAccount"]
         data = {
             'Name': WebDAV_Name,
             'Path': WebDAV_Path
@@ -1090,7 +1145,7 @@ def MobileConnect():
 
 # 生成手机端能扫描的QRCode
 def generate_qr_code():
-    QRCode_require_URL = URL + '/api/v3/user/session'
+    QRCode_require_URL = URL + router["session"]
     cookies = ReadCookies()
     session = requests.Session()
     session.keep_alive = False
@@ -1174,7 +1229,7 @@ def SaveAppSettings():
         pid = os.getpid()
         os.execl(os.path.abspath(__file__), *sys.argv)
     except Exception as e:
-        dialogs.Messagebox.show_error(message='保存失败，错误：' + str(e) + "\n如果你未打包该程序，这是正常现象，请手动重启程序。\n本程序将会自动关闭。")
+        dialogs.Messagebox.show_error(message='保存失败，错误：' + str(e) + "\n如果你未打包该程序，这是正常现象，请手动重启程序。\n如果你使用单文件程序，则修改无法生效。\n本程序将会尝试自动关闭。")
         exit()
 
 # 关于程序

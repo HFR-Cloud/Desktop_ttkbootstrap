@@ -1,5 +1,9 @@
 # HFR-Cloud Desktop 更新日志
 
+## `V0.2.1.1` build 20240521
+- 优化 软件图标的icon
+- 优化 对HFR-Cloud的支持
+
 ## `V0.2.1` build 20240518
 - 新增 APP设置
 - 优化 在源代码中添加更多的注释
