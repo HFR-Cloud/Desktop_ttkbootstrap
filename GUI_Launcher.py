@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.2.1.1"
+App_Version = "0.2.2"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -189,13 +189,6 @@ def init():
         Launching_Label.configure(text='程序出现错误或无法连接到服务端，错误原因：' + str(e), font=('思源黑体', 12))
         sys.exit()
 
-    # 自动登录
-    entry_username.config(state='disabled')
-    entry_password.config(state='disabled')
-    button_login.config(state='disabled')
-    errorCode.set('正在自动登录……')
-    loginErrorCode.pack()
-
     try:
         SuccessLogin('', True)
     except:
@@ -277,31 +270,21 @@ def SuccessLogin(response, WhenStart=False):        # WhenStart：程序启动�
         cookieWriter.write(cookies_str)
         cookieWriter.close()
         if WhenStart:
-            config.set('account', 'id', response.json()['data']['user']['id'])
-            config.set('account', 'nickname', response.json()['data']['user']['nickname'])
-            config.set('account', 'groupname', response.json()['data']['user']['group']['name'])
-            config.set('account', 'AllowShare', str(response.json()['data']['user']['group']['allowShare']))
-            config.set('account', 'AllowRemoteDownload',
-                    str(response.json()['data']['user']['group']['allowRemoteDownload']))
-            config.set('account', 'AllowArchiveDownload',
-                    str(response.json()['data']['user']['group']['allowArchiveDownload']))
-            try:
-                config.set('account', 'AdvanceDelete', str(response.json()['data']['user']['group']['advanceDelete']))
-                config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['user']['group']['allowWebDAVProxy']))
-            except:
-                print('无法读取某些配置，可能是服务端版本过低')
+            data = response.json()['data']['user']
         else:
-            config.set('account', 'id', response.json()['data']['id'])
-            config.set('account', 'nickname', response.json()['data']['nickname'])
-            config.set('account', 'groupname', response.json()['data']['group']['name'])
-            config.set('account', 'AllowShare', str(response.json()['data']['group']['allowShare']))
-            config.set('account', 'AllowRemoteDownload', str(response.json()['data']['group']['allowRemoteDownload']))
-            config.set('account', 'AllowArchiveDownload', str(response.json()['data']['group']['allowArchiveDownload']))
-            try:
-                config.set('account', 'AdvanceDelete', str(response.json()['data']['group']['advanceDelete']))
-                config.set('account', 'AllowWebDAVProxy', str(response.json()['data']['group']['allowWebDAVProxy']))
-            except:
-                print('无法读取某些配置，可能是服务端版本过低')
+            data = response.json()['data']
+        config.set('account', 'id', data['id'])
+        config.set('account', 'nickname', data['nickname'])
+        config.set('account', 'groupname', data['group']['name'])
+        config.set('account', 'AllowShare', str(data['group']['allowShare']))
+        config.set('account', 'AllowRemoteDownload', str(data['group']['allowRemoteDownload']))
+        config.set('account', 'AllowArchiveDownload', str(data['group']['allowArchiveDownload']))
+        try:
+            config.set('account', 'AdvanceDelete', str(data['group']['advanceDelete']))
+            config.set('account', 'AllowWebDAVProxy', str(data['group']['allowWebDAVProxy']))
+        except:
+            print('无法读取某些配置，可能是服务端版本过低')
+    GetDirList()
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
     Launch_Frame.pack_forget()
@@ -311,7 +294,6 @@ def SuccessLogin(response, WhenStart=False):        # WhenStart：程序启动�
     app.place_window_center()
     TitleShow = '/ - ' + Cloud_name
     app.title(TitleShow)
-    GetDirList()
     RefrushStorage()
 
 # 刷新验证码
@@ -523,6 +505,7 @@ def BackToLogin():
 # 退出登录相关
 def LogOut():
     # 创建新线程来处理退出登录过程
+    fileList.pack_forget()
     fileList.delete(*fileList.get_children())  # 清空文件列表
     ROOTPATH_URL = URL + router["session"]
     cookies = ReadCookies()
@@ -533,7 +516,6 @@ def LogOut():
     if response.status_code == 200:
         status_code = response.json()['code']
         if status_code == 0:  # 退出登录成功
-            dialogs.Messagebox.ok(message='退出登录成功')
             fileList.delete(*fileList.get_children())  # 清空文件列表
             Home_Frame.pack_forget()
             app.title(Cloud_name)
@@ -654,7 +636,9 @@ def filelistonrightclick(event):
 def GetDirList(path="%2F", WhenStart=False):
     def task():
         fileList.pack_forget()
-        ProgressBar.pack(fill=ttk.X)
+        Home_Frame.pack_forget()
+        ProgressBar.pack(side=ttk.TOP, fill=ttk.X)
+        Home_Frame.pack(fill=ttk.BOTH, expand=True)
 
         ROOTPATH_URL = URL + router["dirList"] + path
         cookies = ReadCookies()
@@ -715,6 +699,7 @@ def GetDirList(path="%2F", WhenStart=False):
             Home_Frame.pack()
 
         ProgressBar.pack_forget()
+        scrollbar.pack(side=ttk.RIGHT, fill=ttk.Y)
 
     threading.Thread(target=task).start()
 
@@ -730,16 +715,16 @@ def ListNewDir(event):
 # 上传到本地存储/Onedrive事件
 def UploadLocalFile():
     # 创建一个新的线程来执行文件上传的任务
-    dialogs.Messagebox.show_info(message='目前传输队列不可用，请在终端查看上传详情，传输完成后自动刷新上传列表\n若本程序已经打包成可执行文件，则暂时无法显示上传进度')
+    dialogs.Messagebox.show_info(message='目前传输队列很简陋，在文件-传输队列可看到模拟终端输出内容\n传输完成后自动刷新上传列表')
     upload_thread = threading.Thread(target=UploadFileLocalThread)
     upload_thread.start()
 
 def UploadFileLocalThread():
     file_Path = filedialog.askopenfilenames()
-    print(file_Path)
     if file_Path != '':
         FileNumber = len(file_Path)
-        print('共选择了', FileNumber, '个文件，准备上传')
+        log = '\n共选择了 ' + str(FileNumber) + ' 个文件，准备上传'
+        Transfer_CMD.insert(END, log)
         # 循环获取文件路径、大小、名字
         for i in range(FileNumber):
             file_path = file_Path[i]
@@ -756,19 +741,22 @@ def UploadFileLocalThread():
             session.keep_alive = False
             session.cookies = ReadCookies()
             response = session.put(UploadFile_URL_Require, data=json.dumps(data))
+            print(response.text)
             sessionID = response.json()['data']['sessionID']
             chunk_size = response.json()['data']['chunkSize']
             try:
                 Upload_URL = response.json()['data']['uploadURLs'][0]
-                print('非本地文件上传，识别上传地址中……')
+                log = '\n上传请求成功，识别上传策略……'
+                Transfer_CMD.insert(END, log)  #('非本地文件上传，识别上传地址中……')
                 IsSharePoint = "sharepoint.com" in Upload_URL
                 if IsSharePoint == True:
-                    print("识别成功，上传策略为SharePoint")
+                    log = '\n识别成功，上传策略为SharePoint'
+                    Transfer_CMD.insert(END, log)
                     Upload_Type = 'onedrive'
                     UploadFile_URL = Upload_URL
                     CallbackURL = URL + router["OneDriveCallback"] + sessionID
             except:
-                print("本地策略上传")
+                Transfer_CMD.insert('', 'end', values='\n本地策略上传')
                 Upload_Type = 'local'
                 UploadFile_URL = URL + router["fileUpload"] + '/' + sessionID + '/'
             if Upload_Type == "local":
@@ -777,28 +765,26 @@ def UploadFileLocalThread():
                         chunk_no = 0
                         for chunk_file in range(0, file_size, chunk_size):
                             chunk = f.read(chunk_size)
-    
-                            if Upload_Type == "local":
-                                UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
-                            elif Upload_Type == "onedrive":
-                                UploadFile_URL_Now = UploadFile_URL
-                            print("准备上传文件",file_name,"的第",chunk_no,"个分片")
-                            if Upload_Type == 'local':
-                                response = session.post(UploadFile_URL_Now, data=chunk)
+                            UploadFile_URL_Now = UploadFile_URL + str(chunk_no)
+                            Transfer_CMD.insert('', 'end', values="\n准备上传文件 " + file_name + "的第" + chunk_no + "个分片")
+                            response = session.post(UploadFile_URL_Now, data=chunk)
                             if response.json()['code'] == 0:
-                                print(file_name, '的第', chunk_no, '个分片上传成功')
+                                Transfer_CMD.insert('', 'end', values="\n" + file_name + '的第' + chunk_no + '个分片上传成功')
                             else:
-                                print('分片',chunk_file,'上传失败，错误：',response.json())
+                                Transfer_CMD.insert('', 'end', values='\n分片' + chunk_file + '上传失败，错误：' + response.json())
                             chunk_no += 1
-                        print("文件",file_name,'上传成功')
+                        Transfer_CMD.insert('', 'end', values='\n文件' + file_name + '上传成功')
                 except Exception as e:
-                    print("上传失败，错误：",e)
+                    dialogs.Messagebox.show_error(message='上传失败，错误：' + e)
+                    print(e)
             elif Upload_Type == "onedrive":
                 try:
                     with open(file_path, 'rb') as file:
                         for i in range(0, file_size, chunk_size):
                             start = i
                             end = min(i + chunk_size, file_size) - 1
+                            log = '\n准备上传文件 ' + file_name + '的第' + str(i) + '个分片'
+                            Transfer_CMD.insert(END, log)
                             Uploader = session.put(
                                 UploadFile_URL,
                                 headers={
@@ -807,10 +793,17 @@ def UploadFileLocalThread():
                                 },
                                 data=file.read(chunk_size),
                             )
+                        log = "\n" + file_name + '的第' + str(i) + '个分片上传成功'
+                        Transfer_CMD.insert(END, log)
+                    log = '\n文件' + file_name + '服务端处理中……'
+                    Transfer_CMD.insert(END, log)
                     session.post(CallbackURL, json={})
+                    Transfer_CMD.insert(END, '\n文件' + file_name + '上传成功')
                 except Exception as e:
                     print("上传失败，错误：", e)
-    GetDirList(RealAddress)
+                GetDirList(RealAddress)
+    else:
+        print("未选择文件")
 
 # 下载文件事件
 def DownloadFile():
@@ -886,7 +879,7 @@ def SearchFile(Keywords='', Type='None'):
     session.cookies = cookies
     response = session.get(Search_URL)
     if response.text == '404 page not found':
-        dialogs.Messagebox.show_error(message='服务商可能关闭了搜索功能，请联系服务商')
+        dialogs.Messagebox.show_error(message='这里有个Bug，搜索功能暂时无法使用')
         return 0
     status_code = response.json()['code']
     if status_code == 0:
@@ -1182,7 +1175,7 @@ def ConnectMobile_Back():
 
 def TransferList():
     Home_Frame.pack_forget()
-    Transfer_List_Frame.pack(fill=BOTH, expand=YES)
+    Transfer_List_Frame.pack(fill='both', expand=True)
 
 # 个人设置页面
 def Personal_Settings():
@@ -1243,6 +1236,7 @@ def BackToHome():
     Personal_Settings_Frame.pack_forget()
     FilePreview_Frame.pack_forget()
     AppSettings_Frame.pack_forget()
+    Transfer_List_Frame.pack_forget()
     Transfer_List_Frame.pack_forget()
     About_Frame.pack_forget()
     Home_Frame.pack(fill=BOTH, expand=YES)
@@ -1583,27 +1577,17 @@ WebDAV_Cancel.pack(side=ttk.LEFT, padx=10, pady=10)
 
 Transfer_List_Frame = ttk.Frame(app)
 
-Transfer_List_title = ttk.Label(Transfer_List_Frame, text="传输列表", font=(Fonts, 18))
-Transfer_List_title.pack(anchor="nw", padx=20, pady=20)
+Transfer_List_Title_Frame = ttk.Frame(Transfer_List_Frame)
+Transfer_List_Title_Frame.pack(anchor='n', fill=ttk.X)
 
-Transfer_List = ttk.Treeview(Transfer_List_Frame, columns=["名称", "大小", "类型", "状态", "进度"], show="headings")
-Transfer_List.column("名称", width=200)
-Transfer_List.column("大小", width=50)
-Transfer_List.column("类型", width=50)
-Transfer_List.column("状态", width=50)
-Transfer_List.column("进度", width=50)
-Transfer_List.heading("名称", text="名称")
-Transfer_List.heading("大小", text="大小")
-Transfer_List.heading("类型", text="类型")
-Transfer_List.heading("状态", text="状态")
-Transfer_List.heading("进度", text="进度")
-Transfer_List.pack(fill=ttk.BOTH, expand=True)
+Transfer_List_title = ttk.Label(Transfer_List_Title_Frame, text="传输列表", font=(Fonts, 18))
+Transfer_List_title.pack(side=ttk.LEFT, padx=20, pady=20)
 
-Transfer_List_Button_Frame = ttk.Frame(Transfer_List_Frame)
-Transfer_List_Button_Frame.pack(side=ttk.BOTTOM, anchor="se", padx=20, pady=50)
+Transfer_List_Done = ttk.Button(Transfer_List_Title_Frame, text="完成", bootstyle="outline", command=BackToHome)
+Transfer_List_Done.pack(side=ttk.RIGHT, padx=20, ipadx=20, pady=20)
 
-Transfer_List_Done = ttk.Button(Transfer_List_Button_Frame, text="完成", bootstyle="outline")
-Transfer_List_Done.pack(side=ttk.RIGHT, padx=10, ipadx=20, pady=20)
+Transfer_CMD = ttk.ScrolledText(Transfer_List_Frame, font=(Fonts, 10))
+Transfer_CMD.pack(fill=ttk.BOTH, expand=True)
 
 # 传输列表布局结束，个人设置页布局开始
 
@@ -1670,7 +1654,7 @@ Theme_Entry.pack(anchor="nw", padx=60)
 AppSettings_Button_Frame = ttk.Frame(AppSettings_Frame)
 AppSettings_Button_Frame.pack(padx=10, pady=10)
 
-AppSettings_Save_Button = ttk.Button(AppSettings_Button_Frame, text="保存 (需要重启程序)", command=SaveAppSettings)
+AppSettings_Save_Button = ttk.Button(AppSettings_Button_Frame, text="保存 (需要重启程序)", command=SaveAppSettings, state='disabled')
 AppSettings_Save_Button.pack(side=ttk.LEFT, padx=10, pady=10, ipadx=20)
 
 AppSettings_Cancel = ttk.Button(AppSettings_Button_Frame, text="取消", bootstyle="outline", command=BackToHome)
