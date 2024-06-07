@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.2.2"
+App_Version = "0.2.3"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -219,12 +219,14 @@ Download_queue = []
 # 读取Cookies
 def ReadCookies():
     try:
-        cookies_txt = open('cookies.txt', 'r')  # 以reader读取模式，打开名为cookies.txt的文件
-        cookies_dict = json.loads(cookies_txt.read())  # 调用json模块的loads函数，把字符串转成字典
-        cookies = requests.utils.cookiejar_from_dict(cookies_dict)  # 把转成字典的cookies再转成cookies本来的格式
-        return cookies
+        appdata_path = os.getenv('APPDATA')  # 获取%appdata%的路径
+        cookies_file_path = os.path.join(appdata_path, 'HeyFun', 'HFR-Cloud Desktop Community', 'HFsession')  # 拼接文件路径
+        with open(cookies_file_path, 'r') as cookies_txt:  # 以reader读取模式，打开名为HFsession的文件
+            cookies_dict = json.loads(cookies_txt.read())  # 调用json模块的loads函数，把字符串转成字典
+            cookies = requests.utils.cookiejar_from_dict(cookies_dict)  # 把转成字典的cookies再转成cookies本来的格式
+            return cookies
     except:
-        raise "无法读取Cookies"
+        raise Exception("无法读取Cookies")  # raise需要一个异常实例，不能直接使用字符串
 
 # 注册与忘记密码跳转网页
 def SignUP():
@@ -266,9 +268,17 @@ def SuccessLogin(response, WhenStart=False):        # WhenStart：程序启动�
     if not WhenStart:
         cookies_dict = requests.utils.dict_from_cookiejar(response.cookies)  # 把cookies转化成字典
         cookies_str = json.dumps(cookies_dict)  # 调用json模块的dumps函数，把cookies从字典再转成字符串。
-        cookieWriter = open('cookies.txt', 'w')  # 创建名为cookies.txt的文件，以写入模式写入内容
-        cookieWriter.write(cookies_str)
-        cookieWriter.close()
+        appdata_path = os.getenv('APPDATA')  # 获取%appdata%的路径
+        cookies_file_path = os.path.join(appdata_path, 'HeyFun', 'HFR-Cloud Desktop Community', 'HFsession')  # 拼接文件路径
+        try:
+            with open(cookies_file_path, 'w') as cookieWriter:  # 创建名为HFsession的文件，以写入模式写入内容
+                cookieWriter.write(cookies_str)
+        except:
+            # 创建文件夹路径
+            os.makedirs(os.path.dirname(cookies_file_path), exist_ok=True)
+            # 创建名为HFsession的文件，以写入模式写入内容
+            with open(cookies_file_path, 'w') as cookieWriter:
+                cookieWriter.write(cookies_str)
         if WhenStart:
             data = response.json()['data']['user']
         else:
@@ -317,7 +327,7 @@ def RefrushCaptcha(event):
         # 写入Cookies
         cookies_dict = requests.utils.dict_from_cookiejar(response.cookies)  # 把cookies转化成字典
         cookies_str = json.dumps(cookies_dict)  # 调用json模块的dumps函数，把cookies从字典再转成字符串。
-        cookieWriter = open('cookies.txt', 'w')  # 创建名为cookies.txt的文件，以写入模式写入内容
+        cookieWriter = open('HFsession', 'w')  # 创建名为HFsession的文件，以写入模式写入内容
         cookieWriter.write(cookies_str)
         cookieWriter.close()
 
@@ -1204,9 +1214,9 @@ def SaveAppSettings():
     try:
         if ServerURL_Entry.get() != URL:
             dialogs.Messagebox.show_warning(message='更改服务器地址需要重新登录')
-            # 删除文件同目录下的cookies.txt
+            # 删除文件同目录下的HFsession
             try:
-                os.remove('cookies.txt')
+                os.remove('HFsession')
             except:
                 pass
         config['account']['url'] = ServerURL_Entry.get()
