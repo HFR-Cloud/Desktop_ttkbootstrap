@@ -3,7 +3,7 @@
 # HFR-Cloud Desktop 作者：于小丘 / Debug：暗之旅者
 
 # 填充程序信息
-App_Version = "0.2.3"
+App_Version = "0.2.4"
 
 # 填充国际化信息
 zh_CN = {'launching': '启动中……', 'login_title': '登录 ', "username": "用户名：", "password": "密    码：","captcha": "验证码：", "OTP": "OTP验证码", "login": "登录"}
@@ -91,9 +91,6 @@ def source_path(relative_path):
 cd = source_path('')
 os.chdir(cd)
 
-# 高分屏优化(Alpha测试)
-ctypes.windll.shcore.SetProcessDpiAwareness(1)
-ScaleFactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
 
 # Cookie与配置文件准备
 cookie_jar = http.cookiejar.CookieJar()
@@ -201,7 +198,12 @@ def init():
         Home_Frame.pack_forget()
         # 判断是否需要验证码，如果需要则将窗口放大来适应验证码
         if Login_captcha:
-            app.geometry("623x450")
+            app.geometry("623x550")
+            frame_button.pack_forget()
+            label_captcha_Pic.pack_forget()
+            frame_captcha.pack(pady=5)
+            label_captcha_Pic.pack(pady=5)
+            frame_button.pack(pady=5)
         else:
             app.geometry("623x400")
         app.title(Cloud_name)
@@ -219,14 +221,14 @@ Download_queue = []
 # 读取Cookies
 def ReadCookies():
     try:
-        appdata_path = os.getenv('APPDATA')  # 获取%appdata%的路径
+        appdata_path = os.path.expandvars("%APPDATA%")
         cookies_file_path = os.path.join(appdata_path, 'HeyFun', 'HFR-Cloud Desktop Community', 'HFsession')  # 拼接文件路径
         with open(cookies_file_path, 'r') as cookies_txt:  # 以reader读取模式，打开名为HFsession的文件
             cookies_dict = json.loads(cookies_txt.read())  # 调用json模块的loads函数，把字符串转成字典
             cookies = requests.utils.cookiejar_from_dict(cookies_dict)  # 把转成字典的cookies再转成cookies本来的格式
             return cookies
     except:
-        raise Exception("无法读取Cookies")  # raise需要一个异常实例，不能直接使用字符串
+        dialogs.Messagebox.show_error(message='无法读取Cookies，请重新登录')
 
 # 注册与忘记密码跳转网页
 def SignUP():
@@ -268,7 +270,7 @@ def SuccessLogin(response, WhenStart=False):        # WhenStart：程序启动�
     if not WhenStart:
         cookies_dict = requests.utils.dict_from_cookiejar(response.cookies)  # 把cookies转化成字典
         cookies_str = json.dumps(cookies_dict)  # 调用json模块的dumps函数，把cookies从字典再转成字符串。
-        appdata_path = os.getenv('APPDATA')  # 获取%appdata%的路径
+        appdata_path = os.path.expandvars("%APPDATA%")  # 获取%appdata%的路径
         cookies_file_path = os.path.join(appdata_path, 'HeyFun', 'HFR-Cloud Desktop Community', 'HFsession')  # 拼接文件路径
         try:
             with open(cookies_file_path, 'w') as cookieWriter:  # 创建名为HFsession的文件，以写入模式写入内容
@@ -1252,6 +1254,9 @@ def BackToHome():
     Home_Frame.pack(fill=BOTH, expand=YES)
     app.title(RealAddress + " - " + Cloud_name)
 
+def buyPro():
+    webbrowser.open('https://xiaoqiu.in/product/hfr-cloud-desktop-pro-site/')
+
 # 退出APP执行的内容
 def ExitAPP():
     sys.exit()
@@ -1267,7 +1272,6 @@ app.geometry("350x200")
 app.place_window_center()
 app.attributes('-alpha', 0.9)  # 设置窗口半透明
 app.protocol("WM_DELETE_WINDOW", ExitAPP)
-app.tk.call('tk', 'scaling', ScaleFactor / 75)
 
 app_style = ttk.Style()
 app_style.theme_use(theme['Theme'])
@@ -1411,6 +1415,7 @@ UserMenu.add_command(label="管理面板", font=(Fonts, 10))
 UserMenu.add_command(label="退出登录", font=(Fonts, 10), command=LogOut)
 UserMenu.add_separator()
 UserMenu.add_command(label="关于 HeyCloud Desktop", font=(Fonts, 10), command=About)
+UserMenu.add_command(label="购买捐助版", font=(Fonts, 10), command=buyPro)
 accountInfo.config(menu=UserMenu)
 
 fileListFrame = ttk.Frame(Home_Frame)
