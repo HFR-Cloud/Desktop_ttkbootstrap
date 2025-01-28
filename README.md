@@ -1,12 +1,12 @@
 <p align = "center">
-<h1><center>HFR-Cloud Desktop 社区版</center></h1>
-原名Cloudreve Desktop，一个基于Tkinter的可跨平台的海枫云存储客户端，兼容Cloudreve V3，并使用ttkBootstrap库进行美化
+<h1><center>HFR-Cloud Desktop</center></h1>
+原名Cloudreve Desktop，一个基于Tkinter的可跨平台的 HFR-Cloud/DiskNext/Cloudreve v3 客户端，兼容Cloudreve V3，并使用 ttkBootstrap 库进行美化
 <br><br>
 
 程序更新日志请翻阅UPDATE.md。
 
 ## 重要通知
-**不要连接Cloudreve官方演示站 https://demo.cloudreve.org ，会出现JSON读取错误，目前正在分析问题，有能力的朋友在测试环境中尝试**
+**不要连接Cloudreve官方演示站 https://demo.cloudreve.org ，会出现JSON读取错误(被WAF拦截)，目前正在分析解决方案，有能力的朋友在测试环境中尝试**
 
 **我们已经准备好向sqlite3数据库迁移，请保存好相关数据。同时，为了保证单文件程序正常可用，我们在后期版本中需要占用%appdata%/HeyFun/HFR-Cloud Desktop Community/这个文件夹来保存数据**
 
@@ -89,11 +89,11 @@ fonts = 思源黑体                     ;(可不填)程序字体，推荐思源
 - 您可以在 `https://afdian.net/a/yuerchu` 赞助本项目。
 
 ## 升级到捐助版
-开始着手这个项目时，我学Python并没有多久，现在回过头来看这个项目已经让我看不上了。所以我对这个代码进行了重构，新的程序拥有着更现代化的界面以及更完善的功能更新，它的名字叫做HFR-Cloud Desktop Pro。
+开始着手这个项目时，我学Python并没有多久，现在回过头来看这个项目已经让我看不上了。所以我对这个代码进行了重构，新的程序拥有着更现代化的界面以及更完善的功能更新，它的名字叫做 DiskNext Desktop。
 
 当然，持续为爱发电的项目注定活不长久，我希望能依靠这个产品来补充一下自己不多的生活费，让我更有动力来维护这个项目。
 
-HFR-Cloud Desktop Pro可选订阅与买断。用户订阅仅为2元/月，10元/年，买断为39元；站长订阅为10元/月，98元/年，买断198元，支持后续更新，支持换绑1次域名，支持个性化定制。（单位：人民币）
+DiskNext Desktop 可选订阅与买断。用户订阅仅为2元/月，10元/年，买断为39元；站长订阅为10元/月，98元/年，买断198元，支持后续更新，支持换绑1次域名，支持个性化定制。（单位：人民币）
 
 目前暂未开放购买，敬请关注。
 
@@ -103,7 +103,6 @@ HFR-Cloud Desktop Pro可选订阅与买断。用户订阅仅为2元/月，10元/
 ## 小广告
 - 如果你有自己的网站，请请将你的网站名称、网站描述与网站头像地址（注意是地址，否则会被cloudflare打回）发送给`admin@yuxiaoqiu.cn`，并提前在你的网站友链区域填上我的网站信息，我会尽快使用邮件回复：
 ```
-网站名称：海枫筑梦计划
-网站地址：https://yuxiaoqiu.cn
-头像地址：https://img2.imgtp.com/2024/05/01/6GBVrmz2.jpg
+网站名称：于小丘 Blog
+网站地址：https://www.yxqi.cn
 ```
